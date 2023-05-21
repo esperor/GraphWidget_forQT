@@ -3,10 +3,13 @@
 #include <QObject>
 #include <QWidget>
 #include <QPainter>
+#include <QWeakPointer>
+#include <QSharedPointer>
 #include <QPaintEvent>
 #include <QMouseEvent>
 #include <QPointF>
 #include <QVector>
+#include <QTimer>
 #include <QWheelEvent>
 #include <optional>
 #include <variant>
@@ -29,11 +32,28 @@ public:
     float getZoomMultiplier() const     { return _zoomMultipliers[_zoom]; }
     bool getSnappingEnabled() const     { return _bIsSnappingEnabled; }
     int getSnappingInterval() const     { return _snappingInterval; }
+    const QPointF &getOffset() const    { return _offset; }
 
     void setSnappingInterval(int num) { _snappingInterval = num; }
+    void moveView(QVector2D vector);
+    void moveViewUp(float by);
+    void moveViewDown(float by);
+    void moveViewLeft(float by);
+    void moveViewRight(float by);
+
+    QPointF mapToCanvas(QPointF point) const;
+    QPoint mapToCanvas(QPoint point) const;
+
+    // If one or more of params of QPointF is negative, current mouse position will be used
+    void zoomIn(int times = 1, QPointF where = QPointF(-1, -1));
+
+    // If one of params of QPointF is negative, current mouse position will be used
+    void zoomOut(int times = 1, QPointF where = QPointF(-1, -1));
+
+    QWeakPointer<Node> addNode(QPoint canvasPosition, QString name);
 
 public slots:
-    void addNode(QPoint canvasPosition, QString name);
+    void moveCanvas(QPointF offset);
 
 signals:
 
@@ -49,10 +69,12 @@ protected:
 private slots:
     void onPinDrag(PinDragSignal signal);
     void onPinConnect(PinData outPin, PinData inPin);
+    void tick();
 
 private:
     void paint(QPainter *painter, QPaintEvent *event);
-//    QVector<QPainterPath
+    void moveCanvasOnPinDragNearEdge(QPointF mousePosition);
+    void zoom(int times, QPointF where);
 
     QPainter *_painter;
     int _dotPaintGap;
@@ -64,31 +86,21 @@ private:
     // Else there will be an object of PinData struct
     std::optional< std::optional<PinData> > _draggedPinTargetInfo;
     QPoint _draggedPinTarget;
-    QPointF _position, _lastMouseDownPosition, _mousePosition;
+    QPointF _offset, _lastMouseDownPosition, _mousePosition;
     short _zoom;
     int _accumulativeZoomDelta;
 
     int _snappingInterval;
     bool _bIsSnappingEnabled;
 
-    QVector<Node*> _nodes;
+    QVector<QSharedPointer<Node>> _nodes;
 
     // Key for _connectedPins is an out-pin and the value is an in-pin
     QMultiMap<PinData, PinData> _connectedPins;
-    QMap<int, float> _zoomMultipliers =
-        {
-            {   0, 2.0f  },
-            {  -1, 1.5f  },
-            {  -2, 1.0f  },
-            {  -3, 0.90f },
-            {  -4, 0.75f },
-            {  -5, 0.6f  },
-            {  -6, 0.5f  },
-            {  -7, 0.4f  },
-            {  -8, 0.3f  },
-            {  -9, 0.2f  },
-            { -10, 0.1f  },
-        };
+    QTimer *_timer;
+
+
+    const static QMap<short, float> _zoomMultipliers;
 };
 
 }

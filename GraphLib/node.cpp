@@ -36,7 +36,6 @@ Node::Node(int ID, Canvas *canvas, QWidget *parent)
     addPin("lol", PinDirection::In, QColor(0xFF, 0xD9, 0x66));
     addPin("idk", PinDirection::Out, QColor(0x95, 0xBD, 0xFF));
     addPin("you don't actually", PinDirection::In, QColor(0xB5, 0xF1, 0xCC));
-    //_pins[2]->setConnected(true);
 }
 
 Node::~Node()

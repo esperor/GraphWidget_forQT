@@ -21,8 +21,11 @@ const float c_changeRenderZoomMultiplier = 0.4f;
 // --------- CANVAS ---------
 // CANVAS GENERAL CONSTANTS
 
-const short c_zoomMaxBound = 0;
-const short c_zoomMinBound = -10;
+const float c_percentOfCanvasSizeToConsiderNearEdge = 0.14f;
+
+// This is the offset to use with zoomMult=1 to move canvas when the
+// cursor is near edge of the canvas during pin drag
+const float c_standardPinDragEdgeCanvasMoveValue = 50.0f;
 
 // CANVAS RENDER CONSTANTS
 
