@@ -1,7 +1,6 @@
-
 #include "pindata.h"
 #include "constants.h"
-#include "abstractpin.h"
+#include "Abstracts/abstractpin.h"
 
 namespace GraphLib {
 
@@ -14,11 +13,11 @@ PinData::PinData(const AbstractPin *pin)
 {}
 
 PinData::PinData(const PinData &other)
-    : pinDirection{ other.pinDirection }, nodeID{ other.nodeID }, pinID{ other.pinID }, pinText{ other.pinText }, color{ other.color }
+    : pinDirection{ other.pinDirection }, nodeID{ other.nodeID }, pinID{ other.pinID }, typeID{ other.typeID }, pinText{ other.pinText }, color{ other.color }
 {}
 
-PinData::PinData(PinDirection _direction, int _nodeID, int _pinID, const QString &_text, const QColor &_color)
-    : pinDirection{ _direction }, nodeID{ _nodeID }, pinID{ _pinID }, pinText{ _text }, color{ _color }
+PinData::PinData(PinDirection _direction, int _nodeID, int _pinID, int _typeID, const QString &_text, const QColor &_color)
+    : pinDirection{ _direction }, nodeID{ _nodeID }, pinID{ _pinID }, typeID{ _typeID }, pinText{ _text }, color{ _color }
 {}
 
 PinData::~PinData() {}
@@ -31,6 +30,7 @@ QByteArray PinData::toByteArray()
 
     output.append(QByteArray::number(nodeID))           .append(c_pinDataSeparator);
     output.append(QByteArray::number(pinID))            .append(c_pinDataSeparator);
+    output.append(QByteArray::number(typeID))            .append(c_pinDataSeparator);
     output.append(pinText.toStdString())                .append(c_pinDataSeparator);
     output.append(QByteArray::number(color.red()))      .append(c_pinDataSeparator);
     output.append(QByteArray::number(color.green()))    .append(c_pinDataSeparator);
@@ -41,20 +41,23 @@ QByteArray PinData::toByteArray()
 
 PinData PinData::fromByteArray(const QByteArray &byteArray)
 {
+    unsigned short i = 0;
+
     PinData data;
     QList<QByteArray> arrays = byteArray.split(c_pinDataSeparator);
-    data.pinDirection = static_cast<bool>(arrays[0].toInt()) ?
+    data.pinDirection = static_cast<bool>(arrays[i++].toInt()) ?
                             PinDirection::In : PinDirection::Out;
 
-    data.nodeID = arrays[1].toInt();
-    data.pinID = arrays[2].toInt();
-    data.pinText = QString::fromStdString(arrays[3].toStdString());
+    data.nodeID = arrays[i++].toInt();
+    data.pinID = arrays[i++].toInt();
+    data.typeID = arrays[i++].toInt();
+    data.pinText = QString::fromStdString(arrays[i++].toStdString());
 
     int r, g, b, alpha;
-    r = arrays[4].toInt();
-    g = arrays[5].toInt();
-    b = arrays[6].toInt();
-    alpha = arrays[7].toInt();
+    r = arrays[i++].toInt();
+    g = arrays[i++].toInt();
+    b = arrays[i++].toInt();
+    alpha = arrays[i++].toInt();
     data.color = QColor(r, g, b, alpha);
 
     return data;

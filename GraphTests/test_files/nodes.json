@@ -1,0 +1,53 @@
+{
+    "types" : [
+        {
+            "name": "Monitor",
+            "in-pins": [
+                {
+                    "type": "HDMI"
+                }
+            ]
+        },
+        {
+            "name": "Computer",
+            "in-pins": [
+                {
+                    "type": "power"
+                },
+                {
+                    "type": "USB"
+                },
+                {
+                    "type": "USB"
+                },
+                {
+                    "type": "USB"
+                },
+                {
+                    "type": "USB"
+                }
+            ],
+            "out-pins": [
+                {
+                    "type": "HDMI"
+                }
+            ]
+        },
+        {
+            "name": "Keyboard",
+            "out-pins": [
+                {
+                    "type": "USB"
+                }
+            ]
+        },
+        {
+            "name": "Mouse",
+            "out-pins": [
+                {
+                    "type": "USB"
+                }
+            ]
+        }
+    ]
+}

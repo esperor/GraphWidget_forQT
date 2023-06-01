@@ -1,4 +1,3 @@
-
 #include "pindragsignal.h"
 
 namespace GraphLib {

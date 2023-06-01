@@ -3,9 +3,13 @@
 #include <QFont>
 #include <QPoint>
 #include <QPainterPath>
+#include <optional>
+
 #include "GraphLib_global.h"
 
 namespace GraphLib {
+
+std::optional<QJsonObject> loadFile(const char* name);
 
 QFont GRAPHLIB_EXPORT standardFont(int size);
 

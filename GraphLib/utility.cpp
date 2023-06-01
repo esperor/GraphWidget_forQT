@@ -1,7 +1,35 @@
-#include "util_functions.h"
+#include <QFile>
+#include <QJsonParseError>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QtDebug>
+
+#include "utility.h"
 #include "constants.h"
 
 namespace GraphLib {
+
+std::optional<QJsonObject> loadFile(const char* name)
+{
+    QString file = QString(name);
+
+    QFile inFile(name);
+    qDebug() << (inFile.exists() ? "" : inFile.fileName());
+    if (!inFile.open(QIODevice::ReadOnly))
+        return std::nullopt;
+
+    QByteArray data = inFile.readAll();
+    inFile.close();
+
+    QJsonParseError errorPtr;
+    QJsonDocument doc = QJsonDocument::fromJson(data, &errorPtr);
+    if (doc.isNull())
+    {
+        return std::nullopt;
+    }
+
+    return doc.object();
+}
 
 QFont standardFont(int size)
 {

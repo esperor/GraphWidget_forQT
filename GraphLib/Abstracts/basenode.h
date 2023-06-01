@@ -9,20 +9,20 @@
 #include <QFont>
 #include <QFontMetrics>
 #include <QMap>
-#include "abstractpin.h"
 
-#include "GraphLib_global.h"
+#include "abstractpin.h"
+#include "../GraphLib_global.h"
 
 namespace GraphLib {
 
 class Canvas;
 
-class GRAPHLIB_EXPORT Node : public QWidget
+class GRAPHLIB_EXPORT BaseNode : public QWidget
 {
     Q_OBJECT
 public:
-    Node(int ID, Canvas *canvas, QWidget *parent = nullptr);
-    ~Node();
+    BaseNode(int ID, Canvas *canvas, QWidget *parent = nullptr);
+    ~BaseNode();
 
     const QPointF &canvasPosition() const { return _canvasPosition; }
     int ID() const { return _ID; }

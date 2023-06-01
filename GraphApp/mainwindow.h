@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QObject>
 #include <QTimer>
+
 #include "GraphLib_global.h"
 #include "canvas.h"
 

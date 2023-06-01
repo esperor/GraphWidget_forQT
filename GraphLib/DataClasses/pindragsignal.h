@@ -1,8 +1,9 @@
 #pragma once
 
-#include "GraphLib_global.h"
-#include "pindata.h"
 #include <QPointF>
+
+#include "../GraphLib_global.h"
+#include "pindata.h"
 
 namespace GraphLib {
 

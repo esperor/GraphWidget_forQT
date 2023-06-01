@@ -1,17 +1,17 @@
-
-#include "node.h"
-#include "canvas.h"
 #include <QPen>
 #include <QRect>
 #include <QtDebug>
 #include <algorithm>
-#include "util_functions.h"
+
+#include "basenode.h"
+#include "canvas.h"
+#include "utility.h"
 #include "constants.h"
 #include "pin.h"
 
 namespace GraphLib {
 
-Node::Node(int ID, Canvas *canvas, QWidget *parent)
+BaseNode::BaseNode(int ID, Canvas *canvas, QWidget *parent)
     : QWidget{ parent }
     , _parentCanvas{ canvas }
     , _ID{ ID }
@@ -38,27 +38,27 @@ Node::Node(int ID, Canvas *canvas, QWidget *parent)
     addPin("you don't actually", PinDirection::In, QColor(0xB5, 0xF1, 0xCC));
 }
 
-Node::~Node()
+BaseNode::~BaseNode()
 {
     delete _painter;
     for (auto pin : _pins)
         delete pin;
 }
 
-void Node::addPin(QString text, PinDirection direction, QColor color)
+void BaseNode::addPin(QString text, PinDirection direction, QColor color)
 {
-    int id = Node::newID();
+    int id = BaseNode::newID();
     Pin *newPin = new Pin(id, this, this);
     _pinsOutlineCoords.insert(id, QPoint(0, 0));
     newPin->setColor(color);
     newPin->setText(text);
     newPin->setDirection(direction);
     _pins.insert(id, newPin);
-    connect(newPin, &AbstractPin::onDrag, this, &Node::slot_onPinDrag);
-    connect(newPin, &AbstractPin::onConnect, this, &Node::slot_onPinConnect);
+    connect(newPin, &AbstractPin::onDrag, this, &BaseNode::slot_onPinDrag);
+    connect(newPin, &AbstractPin::onConnect, this, &BaseNode::slot_onPinConnect);
 }
 
-void Node::slot_onPinDrag(PinDragSignal signal)
+void BaseNode::slot_onPinDrag(PinDragSignal signal)
 {
     switch (signal.type())
     {
@@ -73,26 +73,26 @@ void Node::slot_onPinDrag(PinDragSignal signal)
     signal_onPinDrag(signal);
 }
 
-void Node::slot_onPinConnect(PinData sourcePin, PinData targetPin)
+void BaseNode::slot_onPinConnect(PinData sourcePin, PinData targetPin)
 { signal_onPinConnect(sourcePin, targetPin); }
 
-void Node::setPinConnection(int pinID, PinData connectedPin)
+void BaseNode::setPinConnection(int pinID, PinData connectedPin)
 {
     _pins[pinID]->setConnected(true);
     _pins[pinID]->addConnectedPin(connectedPin);
 }
 
-void Node::setPinConnected(int pinID, bool isConnected)
+void BaseNode::setPinConnected(int pinID, bool isConnected)
 {
     _pins[pinID]->setConnected(isConnected);
 }
 
-float Node::getParentCanvasZoomMultiplier() const
+float BaseNode::getParentCanvasZoomMultiplier() const
 {
     return _parentCanvas->getZoomMultiplier();
 }
 
-void Node::mousePressEvent(QMouseEvent *event)
+void BaseNode::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MouseButton::LeftButton && !_bIsPinPressed)
     {
@@ -104,7 +104,7 @@ void Node::mousePressEvent(QMouseEvent *event)
     else event->ignore();
 }
 
-void Node::mouseReleaseEvent(QMouseEvent *event)
+void BaseNode::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MouseButton::LeftButton && !_bIsPinPressed)
     {
@@ -114,7 +114,7 @@ void Node::mouseReleaseEvent(QMouseEvent *event)
     else event->ignore();
 }
 
-void Node::mouseMoveEvent(QMouseEvent *event)
+void BaseNode::mouseMoveEvent(QMouseEvent *event)
 {
     if (_bIsMouseDown)
     {
@@ -132,7 +132,7 @@ void Node::mouseMoveEvent(QMouseEvent *event)
     event->ignore();
 }
 
-void Node::paintEvent(QPaintEvent *event)
+void BaseNode::paintEvent(QPaintEvent *event)
 {
     _painter->begin(this);
     _painter->setRenderHint(QPainter::Antialiasing, true);
@@ -140,7 +140,7 @@ void Node::paintEvent(QPaintEvent *event)
     _painter->end();
 }
 
-void Node::paint(QPainter *painter, QPaintEvent *)
+void BaseNode::paint(QPainter *painter, QPaintEvent *)
 {
     float parentZoom = _parentCanvas->getZoomMultiplier();
     bool bShouldSimplifyRender = parentZoom <= c_changeRenderZoomMultiplier;

@@ -1,16 +1,16 @@
-
-#include "abstractpin.h"
-#include "constants.h"
-#include "node.h"
 #include <QtDebug>
 #include <QLabel>
 #include <QMimeData>
 #include <string>
-#include "util_functions.h"
+
+#include "abstractpin.h"
+#include "basenode.h"
+#include "constants.h"
+#include "utility.h"
 
 namespace GraphLib {
 
-AbstractPin::AbstractPin(int ID, Node *parentNode, QWidget *parent)
+AbstractPin::AbstractPin(int ID, BaseNode *parentNode, QWidget *parent)
     : QWidget{ parent }
     , _parentNode{ parentNode }
     , _ID{ ID }
@@ -69,7 +69,7 @@ QPixmap AbstractPin::getPixmap() const
 
 PinData AbstractPin::getData() const
 {
-    return PinData(_direction, _parentNode->ID(), _ID, _text, _color);
+    return PinData(_direction, _parentNode->ID(), _ID, 0, _text, _color);
 }
 
 void AbstractPin::mousePressEvent(QMouseEvent *event)

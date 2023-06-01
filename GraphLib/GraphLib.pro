@@ -10,24 +10,33 @@ CONFIG += c++latest
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    abstractpin.cpp \
+    Abstracts/abstractpin.cpp \
+    Abstracts/basenode.cpp \
+    NodeFactory/nodefactorywidget.cpp \
     canvas.cpp \
-    node.cpp \
+    TypeManagers/nodetypemanager.cpp \
     pin.cpp \
-    pindata.cpp \
-    pindragsignal.cpp \
-    util_functions.cpp
+    DataClasses/pindata.cpp \
+    DataClasses/pindragsignal.cpp \
+    TypeManagers/pintypemanager.cpp \
+    typednode.cpp \
+    utility.cpp
 
 HEADERS += \
+    GraphLib.h \
     GraphLib_global.h \
-    abstractpin.h \
+    Abstracts/abstractpin.h \
+    Abstracts/basenode.h \
+    NodeFactory/nodefactorywidget.h \
     canvas.h \
     constants.h \
-    node.h \
+    TypeManagers/nodetypemanager.h \
     pin.h \
-    pindata.h \
-    pindragsignal.h \
-    util_functions.h
+    DataClasses/pindata.h \
+    DataClasses/pindragsignal.h \
+    TypeManagers/pintypemanager.h \
+    typednode.h \
+    utility.h
 
 # Default rules for deployment.
 unix {

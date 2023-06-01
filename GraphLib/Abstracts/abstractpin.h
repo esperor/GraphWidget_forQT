@@ -14,13 +14,13 @@
 #include <QByteArray>
 #include <QDropEvent>
 
-#include "GraphLib_global.h"
-#include "pindata.h"
-#include "pindragsignal.h"
+#include "../GraphLib_global.h"
+#include "../DataClasses/pindata.h"
+#include "../DataClasses/pindragsignal.h"
 
 namespace GraphLib {
 
-class Node;
+class BaseNode;
 
 enum class PinDirection
 {
@@ -33,7 +33,7 @@ class GRAPHLIB_EXPORT AbstractPin : public QWidget
     Q_OBJECT
 
 public:
-    explicit AbstractPin(int ID, Node *parentNode, QWidget *parent = nullptr);
+    explicit AbstractPin(int ID, BaseNode *parentNode, QWidget *parent = nullptr);
     ~AbstractPin();
 
     void setConnected(bool isConnected);
@@ -74,7 +74,7 @@ protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragLeaveEvent(QDragLeaveEvent *event) override;
 
-    Node *_parentNode;
+    BaseNode *_parentNode;
     int _ID;
     QColor _color;
     float _normalD;

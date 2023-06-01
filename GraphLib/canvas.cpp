@@ -1,15 +1,15 @@
-
-#include "canvas.h"
 #include <QPen>
 #include <QRect>
 #include <QPalette>
 #include <algorithm>
-#include "constants.h"
 #include <QMimeData>
 #include <QLinearGradient>
 #include <QPainterPath>
 #include <cmath>
-#include "util_functions.h"
+
+#include "canvas.h"
+#include "utility.h"
+#include "constants.h"
 
 namespace GraphLib {
 
@@ -28,7 +28,7 @@ Canvas::Canvas(QWidget *parent)
     , _accumulativeZoomDelta{ 0 }
     , _snappingInterval{ 20 }
     , _bIsSnappingEnabled{ true }
-    , _nodes{ QVector<QSharedPointer<Node>>() }
+    , _nodes{ QVector<QSharedPointer<BaseNode>>() }
     , _connectedPins{ QMultiMap<PinData, PinData>() }
 {
     setMouseTracking(true);
@@ -43,8 +43,8 @@ Canvas::Canvas(QWidget *parent)
     connect(_timer, &QTimer::timeout, this, &Canvas::tick);
     _timer->start(30);
 
-    addNode(QPoint(-200, 0), "Node 1");
-    addNode(QPoint(200, 0), "Node 2");
+    addBaseNode(QPoint(-200, 0), "Node 1");
+    addBaseNode(QPoint(200, 0), "Node 2");
 }
 
 Canvas::~Canvas()
@@ -201,17 +201,27 @@ void Canvas::onPinDrag(PinDragSignal signal)
     }
 }
 
-QWeakPointer<Node> Canvas::addNode(QPoint canvasPosition, QString name)
+QWeakPointer<BaseNode> Canvas::addBaseNode(QPoint canvasPosition, QString name)
 {
     int id = _nodes.length();
-    _nodes.append(QSharedPointer<Node>(new Node(id, this, this)));
-    _nodes[id]->setCanvasPosition(canvasPosition);
-    _nodes[id]->setName(name);
+    BaseNode *node = new BaseNode(id, this, this);
+    node->setCanvasPosition(canvasPosition);
+    node->setName(name);
 
-    connect(_nodes[id].get(), &Node::signal_onPinDrag, this, &Canvas::onPinDrag);
-    connect(_nodes[id].get(), &Node::signal_onPinConnect, this, &Canvas::onPinConnect);
+    return addNode(node);
+}
 
-    return QWeakPointer<Node>(_nodes[id]);
+QWeakPointer<BaseNode> Canvas::addNode(BaseNode *node)
+{
+    int id = _nodes.length();
+    node->setID(id);
+
+    _nodes.append(QSharedPointer<BaseNode>(node));
+
+    connect(_nodes[id].get(), &BaseNode::signal_onPinDrag, this, &Canvas::onPinDrag);
+    connect(_nodes[id].get(), &BaseNode::signal_onPinConnect, this, &Canvas::onPinConnect);
+
+    return QWeakPointer<BaseNode>(_nodes[id]);
 }
 
 
@@ -342,7 +352,7 @@ void Canvas::paint(QPainter *painter, QPaintEvent *event)
     }
 
     // manage NODES
-    std::ranges::for_each(_nodes, [&](QSharedPointer<Node> &node) {
+    std::ranges::for_each(_nodes, [&](QSharedPointer<BaseNode> &node) {
 
         // this->rect()->center() is used instead of center purposefully
         // in order to fix flicking and lagging of the nodes (dk why it fixes the problem)

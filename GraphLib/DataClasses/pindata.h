@@ -5,7 +5,8 @@
 #include <QColor>
 #include <QByteArray>
 #include <QtDebug>
-#include "GraphLib_global.h"
+
+#include "../GraphLib_global.h"
 
 namespace GraphLib {
 enum class PinDirection;
@@ -16,7 +17,7 @@ struct GRAPHLIB_EXPORT PinData
 public:
     PinData() {}
     PinData(const PinData &other);
-    PinData(PinDirection _direction, int _nodeID, int _pinID, const QString &_text, const QColor &_color);
+    PinData(PinDirection _direction, int _nodeID, int _pinID, int _typeID, const QString &_text, const QColor &_color);
     PinData(const AbstractPin *pin);
     virtual ~PinData();
 
@@ -26,6 +27,7 @@ public:
     PinDirection pinDirection;
     int nodeID;
     int pinID;
+    int typeID;
     QString pinText;
     QColor color;
 };

@@ -1,0 +1,14 @@
+{
+    "types" : [
+        {
+            "name": "power",
+            "color": "FFFFFF"
+        },
+        {
+            "name": "VGA"
+        },
+        {
+            "name": "USB"
+        } 
+    ]
+}

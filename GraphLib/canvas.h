@@ -14,7 +14,7 @@
 #include <optional>
 #include <variant>
 
-#include "node.h"
+#include "Abstracts/basenode.h"
 
 #include "GraphLib_global.h"
 
@@ -50,7 +50,8 @@ public:
     // If one of params of QPointF is negative, current mouse position will be used
     void zoomOut(int times = 1, QPointF where = QPointF(-1, -1));
 
-    QWeakPointer<Node> addNode(QPoint canvasPosition, QString name);
+    QWeakPointer<BaseNode> addBaseNode(QPoint canvasPosition, QString name);
+    QWeakPointer<BaseNode> addNode(BaseNode *node);
 
 public slots:
     void moveCanvas(QPointF offset);
@@ -93,7 +94,7 @@ private:
     int _snappingInterval;
     bool _bIsSnappingEnabled;
 
-    QVector<QSharedPointer<Node>> _nodes;
+    QVector<QSharedPointer<BaseNode>> _nodes;
 
     // Key for _connectedPins is an out-pin and the value is an in-pin
     QMultiMap<PinData, PinData> _connectedPins;

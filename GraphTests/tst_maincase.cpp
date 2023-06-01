@@ -1,16 +1,19 @@
-
-
 #include <gtest/gtest.h>
 #include <gmock/gmock-matchers.h>
+
 #include <QString>
 #include <QByteArray>
+#include <QMap>
+#include <QJsonObject>
 #include <QPointF>
 #include <algorithm>
 #include <string>
 
+#include "TypeManagers/nodetypemanager.h"
+#include "TypeManagers/pintypemanager.h"
 #include "GraphLib_global.h"
-#include "abstractpin.h"
-#include "util_functions.h"
+#include "Abstracts/abstractpin.h"
+#include "utility.h"
 
 using namespace testing;
 using namespace GraphLib;
@@ -19,7 +22,7 @@ TEST(TestPinData, ByteArrayConversions)
 {
     QString str("Text");
     QColor clr(223, 12, 23, 255);
-    PinData first(PinDirection::In, 0, 0, str, clr);
+    PinData first(PinDirection::In, 0, 0, 0, str, clr);
     QByteArray arr = first.toByteArray();
     PinData second = PinData::fromByteArray(arr);
     EXPECT_EQ(first, second);
@@ -49,5 +52,29 @@ TEST(TestUtilityFunctions, TestSnapping)
     std::ranges::for_each(assertions, [&](const std::pair<QPoint, QPoint> &pair){
         lambda(pair.first, pair.second);
     });
+}
+
+TEST(TestFileLoading, Loading)
+{
+    QString path = "./../../GraphSubdirs/GraphTests/test_files/";
+    QString pins = "pins.json", nodes = "nodes.json";
+
+    ASSERT_TRUE(NodeTypeManager::loadTypes(path + nodes));
+    ASSERT_TRUE(PinTypeManager::loadTypes(path + pins));
+}
+
+TEST(TestFileLoading, JsonParsing)
+{
+    EXPECT_EQ(4, NodeTypeManager::Types.size()) << "Expected " << 4 << " and got " << NodeTypeManager::Types.size() << " node types.";
+    EXPECT_EQ(3, PinTypeManager::Types.size()) << "Expected " << 3 << " and got " << PinTypeManager::Types.size() << " pin types.";
+}
+
+TEST(TestFileLoading, Properties)
+{
+    EXPECT_EQ("power", PinTypeManager::Types.at(0).value("name").toString());
+    EXPECT_EQ(0, PinTypeManager::TypeNames["power"]);
+
+    EXPECT_EQ("Monitor", NodeTypeManager::Types.at(0).value("name").toString());
+    EXPECT_EQ(0, NodeTypeManager::TypeNames["Monitor"]);
 }
 
