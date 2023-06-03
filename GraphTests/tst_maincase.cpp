@@ -12,7 +12,8 @@
 #include "TypeManagers/nodetypemanager.h"
 #include "TypeManagers/pintypemanager.h"
 #include "GraphLib_global.h"
-#include "Abstracts/abstractpin.h"
+#include "GraphWidgets/Abstracts/abstractpin.h"
+#include "DataClasses/nodespawndata.h"
 #include "utility.h"
 
 using namespace testing;
@@ -26,6 +27,20 @@ TEST(TestPinData, ByteArrayConversions)
     QByteArray arr = first.toByteArray();
     PinData second = PinData::fromByteArray(arr);
     EXPECT_EQ(first, second);
+}
+
+TEST(TestNodeSpawnData, ByteArrayConversions)
+{
+    QString str("Text");
+    NodeSpawnData first(str);
+    QByteArray arr1 = first.toByteArray();
+    NodeSpawnData second = NodeSpawnData::fromByteArray(arr1);
+    EXPECT_EQ(first, second);
+
+    TypedNodeSpawnData third(str, 1);
+    QByteArray arr2 = third.toByteArray();
+    TypedNodeSpawnData fourth = TypedNodeSpawnData::fromByteArray(arr2);
+    EXPECT_EQ(third, fourth);
 }
 
 TEST(TestUtilityFunctions, TestSnapping)
@@ -65,16 +80,16 @@ TEST(TestFileLoading, Loading)
 
 TEST(TestFileLoading, JsonParsing)
 {
-    EXPECT_EQ(4, NodeTypeManager::Types.size()) << "Expected " << 4 << " and got " << NodeTypeManager::Types.size() << " node types.";
-    EXPECT_EQ(3, PinTypeManager::Types.size()) << "Expected " << 3 << " and got " << PinTypeManager::Types.size() << " pin types.";
+    EXPECT_EQ(4, NodeTypeManager::Types().size()) << "Expected " << 4 << " and got " << NodeTypeManager::Types().size() << " node types.";
+    EXPECT_EQ(3, PinTypeManager::Types().size()) << "Expected " << 3 << " and got " << PinTypeManager::Types().size() << " pin types.";
 }
 
 TEST(TestFileLoading, Properties)
 {
-    EXPECT_EQ("power", PinTypeManager::Types.at(0).value("name").toString());
-    EXPECT_EQ(0, PinTypeManager::TypeNames["power"]);
+    EXPECT_EQ("power", PinTypeManager::Types().at(0).value("name").toString());
+    EXPECT_EQ(0, PinTypeManager::TypeNames()["power"]);
 
-    EXPECT_EQ("Monitor", NodeTypeManager::Types.at(0).value("name").toString());
-    EXPECT_EQ(0, NodeTypeManager::TypeNames["Monitor"]);
+    EXPECT_EQ("Monitor", NodeTypeManager::Types().at(0).value("name").toString());
+    EXPECT_EQ(0, NodeTypeManager::TypeNames()["Monitor"]);
 }
 

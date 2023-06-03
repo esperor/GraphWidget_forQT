@@ -10,11 +10,14 @@ namespace GraphLib {
 class GRAPHLIB_EXPORT NodeTypeManager
 {
 private:
-    NodeTypeManager();
+    NodeTypeManager() = delete;
+
+    static QVector<QJsonObject> _types;
+    static QMap<QString, int> _typeNames;
 
 public:
-    static QVector<QJsonObject> Types;
-    static QMap<QString, int> TypeNames;
+    static const QVector<QJsonObject> &Types() { return _types; }
+    static const QMap<QString, int> &TypeNames() { return _typeNames; }
 
     static bool loadTypes(const char *file);
 

@@ -11,7 +11,7 @@
 #include <QMap>
 
 #include "abstractpin.h"
-#include "../GraphLib_global.h"
+#include "GraphLib_global.h"
 
 namespace GraphLib {
 

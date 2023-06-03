@@ -9,12 +9,8 @@
 
 namespace GraphLib {
 
-NodeTypeManager::NodeTypeManager()
-{}
-
-QVector<QJsonObject> NodeTypeManager::Types = {};
-QMap<QString, int> NodeTypeManager::TypeNames = {};
-
+QVector<QJsonObject> NodeTypeManager::_types = {};
+QMap<QString, int> NodeTypeManager::_typeNames = {};
 
 bool NodeTypeManager::loadTypes(const char *file)
 {
@@ -25,11 +21,11 @@ bool NodeTypeManager::loadTypes(const char *file)
     QJsonArray array = opt.value().value("types").toArray();
 
     unsigned int i = 0;
-    Types.reserve(array.size());
+    _types.reserve(array.size());
     for (auto elem : array)
     {
-        Types.append(elem.toObject());
-        TypeNames.insert(Types.at(i).value("name").toString(), i);
+        _types.append(elem.toObject());
+        _typeNames.insert(_types.at(i).value("name").toString(), i);
         i++;
     }
 

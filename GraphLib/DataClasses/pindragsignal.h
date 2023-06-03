@@ -2,8 +2,8 @@
 
 #include <QPointF>
 
-#include "../GraphLib_global.h"
-#include "pindata.h"
+#include "GraphLib_global.h"
+#include "DataClasses/pindata.h"
 
 namespace GraphLib {
 

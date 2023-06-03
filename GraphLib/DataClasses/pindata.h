@@ -6,7 +6,7 @@
 #include <QByteArray>
 #include <QtDebug>
 
-#include "../GraphLib_global.h"
+#include "GraphLib_global.h"
 
 namespace GraphLib {
 enum class PinDirection;

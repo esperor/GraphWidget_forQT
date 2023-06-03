@@ -14,9 +14,9 @@
 #include <QByteArray>
 #include <QDropEvent>
 
-#include "../GraphLib_global.h"
-#include "../DataClasses/pindata.h"
-#include "../DataClasses/pindragsignal.h"
+#include "GraphLib_global.h"
+#include "DataClasses/pindata.h"
+#include "DataClasses/pindragsignal.h"
 
 namespace GraphLib {
 

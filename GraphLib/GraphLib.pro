@@ -10,32 +10,36 @@ CONFIG += c++latest
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    Abstracts/abstractpin.cpp \
-    Abstracts/basenode.cpp \
+    DataClasses/nodespawndata.cpp \
+    GraphWidgets/Abstracts/abstractpin.cpp \
+    GraphWidgets/Abstracts/basenode.cpp \
     NodeFactory/nodefactorywidget.cpp \
-    canvas.cpp \
+    GraphWidgets/canvas.cpp \
+    NodeFactory/typednodeimage.cpp \
     TypeManagers/nodetypemanager.cpp \
-    pin.cpp \
+    GraphWidgets/pin.cpp \
     DataClasses/pindata.cpp \
     DataClasses/pindragsignal.cpp \
     TypeManagers/pintypemanager.cpp \
-    typednode.cpp \
+    GraphWidgets/typednode.cpp \
     utility.cpp
 
 HEADERS += \
+    DataClasses/nodespawndata.h \
     GraphLib.h \
     GraphLib_global.h \
-    Abstracts/abstractpin.h \
-    Abstracts/basenode.h \
+    GraphWidgets/Abstracts/abstractpin.h \
+    GraphWidgets/Abstracts/basenode.h \
     NodeFactory/nodefactorywidget.h \
-    canvas.h \
+    GraphWidgets/canvas.h \
+    NodeFactory/typednodeimage.h \
     constants.h \
     TypeManagers/nodetypemanager.h \
-    pin.h \
+    GraphWidgets/pin.h \
     DataClasses/pindata.h \
     DataClasses/pindragsignal.h \
     TypeManagers/pintypemanager.h \
-    typednode.h \
+    GraphWidgets/typednode.h \
     utility.h
 
 # Default rules for deployment.

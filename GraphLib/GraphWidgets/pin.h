@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Abstracts/abstractpin.h"
+#include "GraphWidgets/Abstracts/abstractpin.h"
 
 namespace GraphLib {
 

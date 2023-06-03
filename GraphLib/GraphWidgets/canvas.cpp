@@ -10,6 +10,8 @@
 #include "canvas.h"
 #include "utility.h"
 #include "constants.h"
+#include "typednode.h"
+#include "TypeManagers/nodetypemanager.h"
 
 namespace GraphLib {
 
@@ -38,6 +40,17 @@ Canvas::Canvas(QWidget *parent)
     this->setPalette(palette);
     setAcceptDrops(true);
 
+    QString path = "./../../GraphSubdirs/GraphTests/test_files/";
+    QString pins = "pins.json", nodes = "nodes.json";
+
+    NodeTypeManager::loadTypes(path + nodes);
+    //PinTypeManager::loadTypes(path + pins);
+
+    _nfWidget = new NodeFactory::NodeFactoryWidget(this);
+    _nfWidget->setFixedSize(150, 600);
+    _nfWidget->show();
+    _nfWidget->initTypes();
+
 
     _timer = new QTimer(this);
     connect(_timer, &QTimer::timeout, this, &Canvas::tick);
@@ -45,11 +58,12 @@ Canvas::Canvas(QWidget *parent)
 
     addBaseNode(QPoint(-200, 0), "Node 1");
     addBaseNode(QPoint(200, 0), "Node 2");
+    addTypedNode(QPoint(200, -200), 1);
 }
 
 Canvas::~Canvas()
 {
-    delete _painter; delete _timer;
+    delete _painter; delete _timer; delete _nfWidget;
 }
 
 const QMap<short, float> Canvas::_zoomMultipliers =
@@ -163,7 +177,6 @@ void Canvas::onPinConnect(PinData outPin, PinData inPin)
         _connectedPins.insert(outPin, inPin);
         _nodes[outPin.nodeID]->setPinConnection(outPin.pinID, inPin);
         _nodes[inPin.nodeID]->setPinConnection(inPin.pinID, outPin);
-        qDebug() << "Connecting" << outPin << " to" << inPin;
     }
 }
 
@@ -217,11 +230,17 @@ QWeakPointer<BaseNode> Canvas::addNode(BaseNode *node)
     node->setID(id);
 
     _nodes.append(QSharedPointer<BaseNode>(node));
+    _nodes[id]->show();
 
     connect(_nodes[id].get(), &BaseNode::signal_onPinDrag, this, &Canvas::onPinDrag);
     connect(_nodes[id].get(), &BaseNode::signal_onPinConnect, this, &Canvas::onPinConnect);
 
     return QWeakPointer<BaseNode>(_nodes[id]);
+}
+
+QWeakPointer<BaseNode> Canvas::addTypedNode(QPoint canvasPosition, int typeID)
+{
+    return addBaseNode(canvasPosition, NodeTypeManager::Types()[typeID].value("name").toString());
 }
 
 
@@ -286,9 +305,25 @@ void Canvas::wheelEvent(QWheelEvent *event)
     }
 }
 
+void Canvas::dropEvent(QDropEvent *event)
+{
+    if (event->mimeData()->hasFormat(c_mimeFormatForNodeFactory))
+    {
+        event->setDropAction(Qt::CopyAction);
+        event->acceptProposedAction();
+        QByteArray byteArray = event->mimeData()->data(c_mimeFormatForNodeFactory);
+        TypedNodeSpawnData data = TypedNodeSpawnData::fromByteArray(byteArray);
+
+        qDebug() << _nodes;
+        addTypedNode(mapToCanvas(event->position().toPoint()), data.typeID);
+        qDebug() << _nodes;
+    }
+}
+
 void Canvas::dragEnterEvent(QDragEnterEvent *event)
 {
-    if (event->mimeData()->hasFormat(c_mimeFormatForPinConnection))
+    if (event->mimeData()->hasFormat(c_mimeFormatForPinConnection) ||
+        event->mimeData()->hasFormat(c_mimeFormatForNodeFactory))
     {
         event->setDropAction(Qt::CopyAction);
         event->acceptProposedAction();
@@ -297,7 +332,7 @@ void Canvas::dragEnterEvent(QDragEnterEvent *event)
 
 void Canvas::dragMoveEvent(QDragMoveEvent *event)
 {
-    if (_draggedPin)
+    if (_draggedPin && event->mimeData()->hasFormat(c_mimeFormatForPinConnection))
     {
         QPoint mousePos = event->position().toPoint();
         _draggedPinTarget = mousePos;
@@ -418,6 +453,12 @@ void Canvas::paint(QPainter *painter, QPaintEvent *event)
         });
     }
 
+
+    // manage NODEFACTORYWIDGET
+    {
+        _nfWidget->move(this->width() - 10 - _nfWidget->width(), 10);
+        _nfWidget->raise();
+    }
 
 
     // telemetrics 

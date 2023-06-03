@@ -47,8 +47,9 @@ const float c_pinConnectLineWidth = 2.5f;
 
 // PINS GENERAL CONSTANTS
 
-const char c_pinDataSeparator = '/';
+const char c_dataSeparator = '/';
 const QString c_mimeFormatForPinConnection = "PinData";
+const QString c_mimeFormatForNodeFactory = "NewNode";
 
 
 
@@ -63,10 +64,18 @@ const float c_nodeMaxOutlineWidth = 3.0f;
 
 
 
+// ----- NODEFACTORY ---------
+// GENERAL
+
+const int c_nfWidgetSpacing = 40;
+
+
+
 // ------- COLORS ---------
 const QColor c_paletteDefaultColor{ QColor(0x28, 0x2A, 0x3A) };
 const QColor c_dotsColor{ QColor(0xE7, 0xF6, 0xF2) };
 const QColor c_nodesBackgroundColor{ QColor(0x39, 0x5B, 0x64, 200) };
+const QColor c_nfWidgetBackgroundColor{ QColor(0x39, 0x5B, 0x64, 200) };
 const QColor c_nodesOutlineColor{ QColor(0xA5, 0xC9, 0xCA, 200) };
 
 }

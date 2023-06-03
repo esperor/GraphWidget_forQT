@@ -6,7 +6,7 @@
 #include <QTimer>
 
 #include "GraphLib_global.h"
-#include "canvas.h"
+#include "GraphWidgets/canvas.h"
 
 
 QT_BEGIN_NAMESPACE

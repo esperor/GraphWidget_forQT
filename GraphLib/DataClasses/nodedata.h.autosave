@@ -1,0 +1,15 @@
+#pragma once
+
+#include "GraphWidgets/Abstracts/basenode.h"
+#include "GraphLib_global.h"
+
+namespace GraphLib {
+
+class GRAPHLIB_EXPORT NodeData
+{
+public:
+    NodeData() {}
+    NodeData()
+};
+
+}

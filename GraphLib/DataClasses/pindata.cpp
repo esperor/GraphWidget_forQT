@@ -1,6 +1,6 @@
 #include "pindata.h"
 #include "constants.h"
-#include "Abstracts/abstractpin.h"
+#include "GraphWidgets/Abstracts/abstractpin.h"
 
 namespace GraphLib {
 
@@ -26,16 +26,16 @@ QByteArray PinData::toByteArray()
 {
     QByteArray output;
     output.append(QByteArray::number(static_cast<int>(pinDirection == PinDirection::In)));
-    output.append(c_pinDataSeparator);
+    output.append(c_dataSeparator);
 
-    output.append(QByteArray::number(nodeID))           .append(c_pinDataSeparator);
-    output.append(QByteArray::number(pinID))            .append(c_pinDataSeparator);
-    output.append(QByteArray::number(typeID))            .append(c_pinDataSeparator);
-    output.append(pinText.toStdString())                .append(c_pinDataSeparator);
-    output.append(QByteArray::number(color.red()))      .append(c_pinDataSeparator);
-    output.append(QByteArray::number(color.green()))    .append(c_pinDataSeparator);
-    output.append(QByteArray::number(color.blue()))     .append(c_pinDataSeparator);
-    output.append(QByteArray::number(color.alpha()))    .append(c_pinDataSeparator);
+    output.append(QByteArray::number(nodeID))           .append(c_dataSeparator);
+    output.append(QByteArray::number(pinID))            .append(c_dataSeparator);
+    output.append(QByteArray::number(typeID))            .append(c_dataSeparator);
+    output.append(pinText.toStdString())                .append(c_dataSeparator);
+    output.append(QByteArray::number(color.red()))      .append(c_dataSeparator);
+    output.append(QByteArray::number(color.green()))    .append(c_dataSeparator);
+    output.append(QByteArray::number(color.blue()))     .append(c_dataSeparator);
+    output.append(QByteArray::number(color.alpha()))    .append(c_dataSeparator);
     return output;
 }
 
@@ -44,7 +44,7 @@ PinData PinData::fromByteArray(const QByteArray &byteArray)
     unsigned short i = 0;
 
     PinData data;
-    QList<QByteArray> arrays = byteArray.split(c_pinDataSeparator);
+    QList<QByteArray> arrays = byteArray.split(c_dataSeparator);
     data.pinDirection = static_cast<bool>(arrays[i++].toInt()) ?
                             PinDirection::In : PinDirection::Out;
 

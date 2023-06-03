@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QWidget>
 
-#include "Abstracts/basenode.h"
+#include "GraphWidgets/Abstracts/basenode.h"
 
 namespace GraphLib {
 
@@ -16,5 +16,6 @@ public:
 private:
     int _typeID;
 };
+// NodeTypeManager::Types()[data.typeID].value("name").toString()
 
 }

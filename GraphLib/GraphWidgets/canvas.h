@@ -14,8 +14,8 @@
 #include <optional>
 #include <variant>
 
-#include "Abstracts/basenode.h"
-
+#include "NodeFactory/nodefactorywidget.h"
+#include "GraphWidgets/Abstracts/basenode.h"
 #include "GraphLib_global.h"
 
 
@@ -52,6 +52,7 @@ public:
 
     QWeakPointer<BaseNode> addBaseNode(QPoint canvasPosition, QString name);
     QWeakPointer<BaseNode> addNode(BaseNode *node);
+    QWeakPointer<BaseNode> addTypedNode(QPoint canvasPosition, int typeID);
 
 public slots:
     void moveCanvas(QPointF offset);
@@ -64,6 +65,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+    void dropEvent(QDropEvent *event) override;
     void dragMoveEvent(QDragMoveEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
 
@@ -99,7 +101,7 @@ private:
     // Key for _connectedPins is an out-pin and the value is an in-pin
     QMultiMap<PinData, PinData> _connectedPins;
     QTimer *_timer;
-
+    NodeFactory::NodeFactoryWidget *_nfWidget;
 
     const static QMap<short, float> _zoomMultipliers;
 };

@@ -14,7 +14,6 @@ std::optional<QJsonObject> loadFile(const char* name)
     QString file = QString(name);
 
     QFile inFile(name);
-    qDebug() << (inFile.exists() ? "" : inFile.fileName());
     if (!inFile.open(QIODevice::ReadOnly))
         return std::nullopt;
 

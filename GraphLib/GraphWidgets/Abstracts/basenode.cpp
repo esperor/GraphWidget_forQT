@@ -4,10 +4,10 @@
 #include <algorithm>
 
 #include "basenode.h"
-#include "canvas.h"
+#include "GraphWidgets/canvas.h"
 #include "utility.h"
 #include "constants.h"
-#include "pin.h"
+#include "GraphWidgets/pin.h"
 
 namespace GraphLib {
 
