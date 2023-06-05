@@ -13,6 +13,7 @@ SOURCES += \
     DataClasses/nodespawndata.cpp \
     GraphWidgets/Abstracts/abstractpin.cpp \
     GraphWidgets/Abstracts/basenode.cpp \
+    NodeFactory/nodefactory.cpp \
     NodeFactory/nodefactorywidget.cpp \
     GraphWidgets/canvas.cpp \
     NodeFactory/typednodeimage.cpp \
@@ -30,6 +31,7 @@ HEADERS += \
     GraphLib_global.h \
     GraphWidgets/Abstracts/abstractpin.h \
     GraphWidgets/Abstracts/basenode.h \
+    NodeFactory/nodefactory.h \
     NodeFactory/nodefactorywidget.h \
     GraphWidgets/canvas.h \
     NodeFactory/typednodeimage.h \

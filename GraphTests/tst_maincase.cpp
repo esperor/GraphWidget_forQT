@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <string>
 
+#include "NodeFactory/nodefactory.h"
 #include "TypeManagers/nodetypemanager.h"
 #include "TypeManagers/pintypemanager.h"
 #include "GraphLib_global.h"
@@ -91,5 +92,37 @@ TEST(TestFileLoading, Properties)
 
     EXPECT_EQ("Monitor", NodeTypeManager::Types().at(0).value("name").toString());
     EXPECT_EQ(0, NodeTypeManager::TypeNames()["Monitor"]);
+}
+
+TEST(TestNodeFactory, ParseToColor)
+{
+    auto check = [](QString str, int r, int g, int b) {
+        QColor clr = NodeFactory::parseToColor(str);
+
+        EXPECT_EQ(clr.isValid(), true);
+
+        EXPECT_EQ(clr.red(), r);
+        EXPECT_EQ(clr.green(), g);
+        EXPECT_EQ(clr.blue(), b);
+    };
+
+    QString str1("00AF00");
+
+//    QStringList list = str1.split(QRegularExpression(".."));
+//    EXPECT_EQ(list.size(), 3);
+//    EXPECT_EQ(list[0], "00");
+//    EXPECT_EQ(list[1], "AF");
+
+//    bool ok;
+//    int parsed = list[1].toInt(&ok, 16);
+
+//    EXPECT_TRUE(ok);
+//    EXPECT_EQ(parsed, 0xAF);
+
+    check(str1, 0, 0xAF, 0);
+    QString str2("2F03DD");
+    check(str2, 0x2F, 0x03, 0xDD);
+    QString str3("FFFFFF");
+    check(str3, 0xFF, 0xFF, 0xFF);
 }
 

@@ -16,6 +16,10 @@ const float c_globalOutlineWidth = 2.0f;
 // the render will be simplified
 const float c_changeRenderZoomMultiplier = 0.4f;
 
+// COMMON GENERAL CONSTANTS
+
+const Qt::KeyboardModifier c_multiSelectionModifier = Qt::ShiftModifier;
+
 
 
 // --------- CANVAS ---------
@@ -65,7 +69,7 @@ const float c_nodeMaxOutlineWidth = 3.0f;
 
 
 // ----- NODEFACTORY ---------
-// GENERAL
+// NODEFACTORY GENERAL CONSTANTS
 
 const int c_nfWidgetSpacing = 40;
 
@@ -77,5 +81,7 @@ const QColor c_dotsColor{ QColor(0xE7, 0xF6, 0xF2) };
 const QColor c_nodesBackgroundColor{ QColor(0x39, 0x5B, 0x64, 200) };
 const QColor c_nfWidgetBackgroundColor{ QColor(0x39, 0x5B, 0x64, 200) };
 const QColor c_nodesOutlineColor{ QColor(0xA5, 0xC9, 0xCA, 200) };
+const QColor c_selectionColor{ QColor(0xE5, 0x58, 0x07) };
+const QColor c_selectionRectColor{ QColor(0xC2, 0xDE, 0xDC) };
 
 }

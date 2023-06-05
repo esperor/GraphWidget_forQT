@@ -9,7 +9,8 @@ class GRAPHLIB_EXPORT Pin : public AbstractPin
     Q_OBJECT
 
 public:
-    Pin(int ID, BaseNode *parentNode, QWidget *parent = nullptr);
+    Pin(BaseNode *parent);
+    Pin(int ID, BaseNode *parent);
 };
 
 }

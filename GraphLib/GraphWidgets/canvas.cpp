@@ -10,8 +10,10 @@
 #include "canvas.h"
 #include "utility.h"
 #include "constants.h"
+#include "NodeFactory/nodefactory.h"
 #include "typednode.h"
 #include "TypeManagers/nodetypemanager.h"
+#include "TypeManagers/pintypemanager.h"
 
 namespace GraphLib {
 
@@ -19,7 +21,6 @@ Canvas::Canvas(QWidget *parent)
     : QWidget{ parent }
     , _painter{ new QPainter() }
     , _dotPaintGap{ 40 }
-    , _bIsMouseDown{ false }
     , _draggedPin{ std::nullopt }
     , _draggedPinTargetInfo{ std::nullopt }
     , _draggedPinTarget{ QPoint() }
@@ -30,41 +31,45 @@ Canvas::Canvas(QWidget *parent)
     , _accumulativeZoomDelta{ 0 }
     , _snappingInterval{ 20 }
     , _bIsSnappingEnabled{ true }
-    , _nodes{ QVector<QSharedPointer<BaseNode>>() }
+    , _selectionRect{ std::nullopt }
+    , _nodes{ QMap<int, QSharedPointer<BaseNode>>() }
     , _connectedPins{ QMultiMap<PinData, PinData>() }
+    , _selectedNodes{ QMap<int, QSharedPointer<BaseNode>>() }
 {
     setMouseTracking(true);
     setAutoFillBackground(true);
+    setFocusPolicy(Qt::FocusPolicy::StrongFocus);
 
     QPalette palette(c_paletteDefaultColor);
     this->setPalette(palette);
     setAcceptDrops(true);
 
-    QString path = "./../../GraphSubdirs/GraphTests/test_files/";
+    QString path = "./../../";
     QString pins = "pins.json", nodes = "nodes.json";
 
     NodeTypeManager::loadTypes(path + nodes);
-    //PinTypeManager::loadTypes(path + pins);
+    PinTypeManager::loadTypes(path + pins);
 
     _nfWidget = new NodeFactory::NodeFactoryWidget(this);
     _nfWidget->setFixedSize(150, 600);
     _nfWidget->show();
     _nfWidget->initTypes();
 
+    connect(this, &Canvas::onNodesRemoved, this, [&](){
+        if (_nodes.isEmpty()) IDgenerator = 0;
+    });
 
     _timer = new QTimer(this);
     connect(_timer, &QTimer::timeout, this, &Canvas::tick);
     _timer->start(30);
-
-    addBaseNode(QPoint(-200, 0), "Node 1");
-    addBaseNode(QPoint(200, 0), "Node 2");
-    addTypedNode(QPoint(200, -200), 1);
 }
 
 Canvas::~Canvas()
 {
     delete _painter; delete _timer; delete _nfWidget;
 }
+
+unsigned int Canvas::IDgenerator = 0;
 
 const QMap<short, float> Canvas::_zoomMultipliers =
 {
@@ -214,33 +219,51 @@ void Canvas::onPinDrag(PinDragSignal signal)
     }
 }
 
+void Canvas::onNodeSelect(bool bIsMultiSelectionModifierDown, int nodeID)
+{
+    _selectedNodes.insert(nodeID, _nodes[nodeID]);
+
+    if (bIsMultiSelectionModifierDown) return;
+
+    std::ranges::for_each(_selectedNodes.values(), [&](QSharedPointer<BaseNode> &ptr){
+        if (ptr->ID() == nodeID)
+            return;
+        ptr->setSelected(false);
+    });
+
+    _selectedNodes.removeIf([&](QMap<int, QSharedPointer<BaseNode>>::iterator &it){
+        return it.value()->ID() != nodeID;
+    });
+}
+
 QWeakPointer<BaseNode> Canvas::addBaseNode(QPoint canvasPosition, QString name)
 {
-    int id = _nodes.length();
-    BaseNode *node = new BaseNode(id, this, this);
+    BaseNode *node = new BaseNode(this);
     node->setCanvasPosition(canvasPosition);
     node->setName(name);
-
     return addNode(node);
 }
 
 QWeakPointer<BaseNode> Canvas::addNode(BaseNode *node)
 {
-    int id = _nodes.length();
+    int id = newID();
     node->setID(id);
 
-    _nodes.append(QSharedPointer<BaseNode>(node));
+    _nodes.insert(id, QSharedPointer<BaseNode>(node));
     _nodes[id]->show();
 
-    connect(_nodes[id].get(), &BaseNode::signal_onPinDrag, this, &Canvas::onPinDrag);
-    connect(_nodes[id].get(), &BaseNode::signal_onPinConnect, this, &Canvas::onPinConnect);
+    connect(_nodes[id].get(), &BaseNode::onPinDrag, this, &Canvas::onPinDrag);
+    connect(_nodes[id].get(), &BaseNode::onPinConnect, this, &Canvas::onPinConnect);
+    connect(_nodes[id].get(), &BaseNode::onSelect, this, &Canvas::onNodeSelect);
 
     return QWeakPointer<BaseNode>(_nodes[id]);
 }
 
 QWeakPointer<BaseNode> Canvas::addTypedNode(QPoint canvasPosition, int typeID)
 {
-    return addBaseNode(canvasPosition, NodeTypeManager::Types()[typeID].value("name").toString());
+    TypedNode *node = NodeFactory::getNodeOfType(typeID, this);
+    node->setCanvasPosition(canvasPosition);
+    return addNode(node);
 }
 
 
@@ -252,9 +275,19 @@ void Canvas::mousePressEvent(QMouseEvent *event)
     switch (event->button())
     {
     case Qt::MouseButton::RightButton:
-        _bIsMouseDown = true;
         _lastMouseDownPosition = event->position();
         this->setCursor(QCursor(Qt::CursorShape::OpenHandCursor));
+        break;
+    case Qt::MouseButton::LeftButton:
+        _lastMouseDownPosition = event->position();
+        if (event->modifiers() & c_multiSelectionModifier)
+            break;
+
+        std::ranges::for_each(_selectedNodes.values(), [&](QSharedPointer<BaseNode> &ptr){
+            ptr->setSelected(false);
+        });
+
+        _selectedNodes.clear();
         break;
     default:;
     }
@@ -262,12 +295,26 @@ void Canvas::mousePressEvent(QMouseEvent *event)
 
 void Canvas::mouseMoveEvent(QMouseEvent *event)
 {
-    if (_bIsMouseDown)
+    QPointF offset;
+    switch (event->buttons())
     {
-        QPointF offset = event->position() - _lastMouseDownPosition;
+    case Qt::MouseButton::RightButton:
+        offset = event->position() - _lastMouseDownPosition;
         moveCanvas(offset);
 
         _lastMouseDownPosition = event->position();
+        break;
+    case Qt::MouseButton::LeftButton:
+        _selectionRect = QRect(_lastMouseDownPosition.toPoint(), event->position().toPoint());
+        std::ranges::for_each(_nodes, [&](QSharedPointer<BaseNode> &node){
+            QRect nodeRect = node->rect();
+            QPoint mappedTopLeft = node->mapToParent(nodeRect.topLeft());
+            QRect mapped(mappedTopLeft.x(), mappedTopLeft.y(), nodeRect.width(), nodeRect.height());
+            if (mapped.intersects(*_selectionRect))
+                node->setSelected(true, true);
+        });
+        break;
+    default:;
     }
     _mousePosition = event->position();
 }
@@ -277,8 +324,10 @@ void Canvas::mouseReleaseEvent(QMouseEvent *event)
     switch (event->button())
     {
     case Qt::MouseButton::RightButton:
-        _bIsMouseDown = false;
         this->setCursor(QCursor(Qt::CursorShape::ArrowCursor));
+        break;
+    case Qt::MouseButton::LeftButton:
+        _selectionRect = std::nullopt;
         break;
     default:;
     }
@@ -314,9 +363,7 @@ void Canvas::dropEvent(QDropEvent *event)
         QByteArray byteArray = event->mimeData()->data(c_mimeFormatForNodeFactory);
         TypedNodeSpawnData data = TypedNodeSpawnData::fromByteArray(byteArray);
 
-        qDebug() << _nodes;
         addTypedNode(mapToCanvas(event->position().toPoint()), data.typeID);
-        qDebug() << _nodes;
     }
 }
 
@@ -338,6 +385,21 @@ void Canvas::dragMoveEvent(QDragMoveEvent *event)
         _draggedPinTarget = mousePos;
     }
     _mousePosition = event->position();
+}
+
+void Canvas::keyPressEvent(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Delete && !_selectedNodes.isEmpty())
+    {
+        std::ranges::for_each(_selectedNodes, [&](QSharedPointer<BaseNode> &ptr){
+            int id = ptr->ID();
+            _nodes.remove(id);
+        });
+        _selectedNodes.clear();
+        onNodesRemoved();
+    }
+
+    QWidget::keyPressEvent(event);
 }
 
 
@@ -398,10 +460,21 @@ void Canvas::paint(QPainter *painter, QPaintEvent *event)
     });
 
 
+    // draw SELECTION RECT
+    if (_selectionRect)
+    {
+        pen.setStyle(Qt::PenStyle::DashLine);
+        pen.setColor(c_selectionRectColor);
+        painter->setPen(pen);
+
+        painter->drawRect(*_selectionRect);
+        pen.setStyle(Qt::SolidLine);
+        painter->setPen(pen);
+    }
+
 
     // draw PINS CONNECTIONS
     {
-
         pen.setWidth(c_pinConnectLineWidth * zoomMult);
         painter->setPen(pen);
         // manage currently dragged pin
@@ -479,13 +552,8 @@ void Canvas::paint(QPainter *painter, QPaintEvent *event)
         painter->drawText(QPoint(20, 40), QString( "Mouse in viewport: " + pointfToString(_mousePosition) ));
         painter->drawText(QPoint(20, 60), QString( "Size: " + QString::number(rectangle.width()) + ", " + QString::number(rectangle.height()) ));
         painter->drawText(QPoint(20, 80), QString( "Center: " + pointfToString(_offset) ));
-        painter->drawText(QPoint(20, 100), QString( "Node's canvas pos: " + pointfToString(_nodes[0]->canvasPosition()) ));
-        painter->drawText(QPoint(20, 120), QString( "Zoom: " + QString::number(_zoom) ));
-
-        painter->drawText(QPoint(20, 160),
-                          QString( "Node's offset: " + pointfToString( zoomMult * (_nodes[0]->canvasPosition() - _offset) + this->rect().center() )));
-        painter->drawText(QPoint(20, 180), QString( "Node's pos: " + pointfToString( (_nodes[0]->pos()) ) ));
-        painter->drawText(QPoint(20, 200), QString( "Drag pos: " + pointToString(_draggedPinTarget) ));
+        painter->drawText(QPoint(20, 100), QString( "Zoom: " + QString::number(_zoom) ));
+        painter->drawText(QPoint(20, 120), QString( "Drag pos: " + pointToString(_draggedPinTarget) ));
     }
 }
 

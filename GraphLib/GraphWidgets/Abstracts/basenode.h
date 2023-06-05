@@ -20,8 +20,10 @@ class Canvas;
 class GRAPHLIB_EXPORT BaseNode : public QWidget
 {
     Q_OBJECT
+
 public:
-    BaseNode(int ID, Canvas *canvas, QWidget *parent = nullptr);
+    BaseNode(Canvas *canvas);
+    BaseNode(int ID, Canvas *canvas);
     ~BaseNode();
 
     const QPointF &canvasPosition() const { return _canvasPosition; }
@@ -37,14 +39,17 @@ public:
     void setName(QString name) { _name = name; }
     void setPinConnection(int pinID, PinData connectedPin);
     void setPinConnected(int pinID, bool isConnected);
+    void setSelected(bool b, bool bIsMultiSelectionModifierDown = false) { _bIsSelected = b; if (b) onSelect(bIsMultiSelectionModifierDown, _ID); }
 
     void moveCanvasPosition(QPointF vector) { _canvasPosition += vector; }
 
 signals:
-    void signal_onPinDrag(PinDragSignal signal);
-    void signal_onPinConnect(PinData sourcePin, PinData targetPin);
+    void onSelect(bool bIsMultiSelectionModifierDown, int nodeID);
+    void onPinDrag(PinDragSignal signal);
+    void onPinConnect(PinData sourcePin, PinData targetPin);
 
 public slots:
+    void addPin(AbstractPin *pin);
     void addPin(QString text, PinDirection direction, QColor color = QColor(Qt::GlobalColor::black));
 
 private slots:
@@ -59,8 +64,11 @@ protected:
 
 private:
     void paint(QPainter *painter, QPaintEvent *event);
+    virtual void paintSimplifiedName(QPainter *painter, int desiredWidth, QPoint textOrigin);
+    virtual void paintName(QPainter *painter, int desiredWidth, QPoint textOrigin);
 
-    static int newID() { static int id = 0; return id++; }
+    static unsigned int newID() { return IDgenerator++; }
+    static unsigned int IDgenerator;
 
     Canvas *_parentCanvas;
     int _ID;
@@ -69,7 +77,7 @@ private:
     QPointF _canvasPosition;
     // Hidden position is used when the node is being moved for snapping
     QPointF _hiddenPosition;
-    bool _bIsMouseDown, _bIsPinPressed;
+    bool _bIsSelected;
     QPointF _lastMouseDownPosition;
     QString _name;
     QMap<int, QPoint> _pinsOutlineCoords;

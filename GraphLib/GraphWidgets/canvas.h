@@ -58,6 +58,7 @@ public slots:
     void moveCanvas(QPointF offset);
 
 signals:
+    void onNodesRemoved();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -68,8 +69,10 @@ protected:
     void dropEvent(QDropEvent *event) override;
     void dragMoveEvent(QDragMoveEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
+    void onNodeSelect(bool bIsMultiSelectionModifierDown, int nodeID);
     void onPinDrag(PinDragSignal signal);
     void onPinConnect(PinData outPin, PinData inPin);
     void tick();
@@ -78,10 +81,11 @@ private:
     void paint(QPainter *painter, QPaintEvent *event);
     void moveCanvasOnPinDragNearEdge(QPointF mousePosition);
     void zoom(int times, QPointF where);
+    static unsigned int newID() { return IDgenerator++; }
+    static unsigned int IDgenerator;
 
     QPainter *_painter;
     int _dotPaintGap;
-    bool _bIsMouseDown;
     std::optional<PinData> _draggedPin;
 
     // If there is no target, _draggedPinTarget will be null
@@ -95,13 +99,15 @@ private:
 
     int _snappingInterval;
     bool _bIsSnappingEnabled;
+    std::optional<QRect> _selectionRect;
 
-    QVector<QSharedPointer<BaseNode>> _nodes;
+    QMap<int, QSharedPointer<BaseNode>> _nodes;
 
     // Key for _connectedPins is an out-pin and the value is an in-pin
     QMultiMap<PinData, PinData> _connectedPins;
     QTimer *_timer;
     NodeFactory::NodeFactoryWidget *_nfWidget;
+    QMap<int, QSharedPointer<BaseNode>> _selectedNodes;
 
     const static QMap<short, float> _zoomMultipliers;
 };

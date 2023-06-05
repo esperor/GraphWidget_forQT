@@ -1,6 +1,7 @@
 #include <QPen>
 #include <QRect>
 #include <QtDebug>
+#include <QApplication>
 #include <algorithm>
 
 #include "basenode.h"
@@ -11,15 +12,17 @@
 
 namespace GraphLib {
 
-BaseNode::BaseNode(int ID, Canvas *canvas, QWidget *parent)
-    : QWidget{ parent }
+BaseNode::BaseNode(Canvas *canvas) : BaseNode(-1, canvas)
+{}
+
+BaseNode::BaseNode(int ID, Canvas *canvas)
+    : QWidget{ canvas }
     , _parentCanvas{ canvas }
     , _ID{ ID }
     , _painter{ new QPainter() }
     , _canvasPosition{ QPointF(0, 0) }
     , _hiddenPosition{ QPointF() }
-    , _bIsMouseDown{ false }
-    , _bIsPinPressed{ false }
+    , _bIsSelected{ false }
     , _lastMouseDownPosition{ QPointF(0, 0) }
     , _name{ QString("") }
     , _pinsOutlineCoords{ QMap<int, QPoint>() }
@@ -30,32 +33,37 @@ BaseNode::BaseNode(int ID, Canvas *canvas, QWidget *parent)
 
     this->setFixedSize(_normalSize);
 
-    addPin("text", PinDirection::In, QColor(0xA2, 0x7B, 0x5C));
-    addPin("Different", PinDirection::In, QColor(0xF5, 0xEB, 0xEB));
-    addPin("another pin", PinDirection::Out, QColor(0xBA, 0x90, 0xC6));
-    addPin("lol", PinDirection::In, QColor(0xFF, 0xD9, 0x66));
-    addPin("idk", PinDirection::Out, QColor(0x95, 0xBD, 0xFF));
-    addPin("you don't actually", PinDirection::In, QColor(0xB5, 0xF1, 0xCC));
+    connect(this, &BaseNode::onSelect, this, [this](){
+        _bIsSelected = true;
+    });
 }
 
 BaseNode::~BaseNode()
 {
     delete _painter;
-    for (auto pin : _pins)
-        delete pin;
+    std::ranges::for_each(_pins, [](AbstractPin *pin) { delete pin; });
+}
+
+unsigned int BaseNode::IDgenerator = 0;
+
+void BaseNode::addPin(AbstractPin *pin)
+{
+    pin->setID(newID());
+    _pins.insert(pin->getID(), pin);
+    connect(pin, &AbstractPin::onDrag, this, &BaseNode::slot_onPinDrag);
+    connect(pin, &AbstractPin::onConnect, this, &BaseNode::slot_onPinConnect);
+    pin->show();
 }
 
 void BaseNode::addPin(QString text, PinDirection direction, QColor color)
 {
     int id = BaseNode::newID();
-    Pin *newPin = new Pin(id, this, this);
+    Pin *newPin = new Pin(id, this);
     _pinsOutlineCoords.insert(id, QPoint(0, 0));
     newPin->setColor(color);
     newPin->setText(text);
     newPin->setDirection(direction);
-    _pins.insert(id, newPin);
-    connect(newPin, &AbstractPin::onDrag, this, &BaseNode::slot_onPinDrag);
-    connect(newPin, &AbstractPin::onConnect, this, &BaseNode::slot_onPinConnect);
+    addPin(newPin);
 }
 
 void BaseNode::slot_onPinDrag(PinDragSignal signal)
@@ -70,11 +78,11 @@ void BaseNode::slot_onPinDrag(PinDragSignal signal)
         break;
     default:;
     }
-    signal_onPinDrag(signal);
+    onPinDrag(signal);
 }
 
 void BaseNode::slot_onPinConnect(PinData sourcePin, PinData targetPin)
-{ signal_onPinConnect(sourcePin, targetPin); }
+{ onPinConnect(sourcePin, targetPin); }
 
 void BaseNode::setPinConnection(int pinID, PinData connectedPin)
 {
@@ -94,11 +102,9 @@ float BaseNode::getParentCanvasZoomMultiplier() const
 
 void BaseNode::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::MouseButton::LeftButton && !_bIsPinPressed)
+    if (event->buttons() & Qt::MouseButton::LeftButton)
     {
-        _bIsMouseDown = true;
         _lastMouseDownPosition = mapToParent(event->position());
-        this->setCursor(QCursor(Qt::CursorShape::OpenHandCursor));
         _hiddenPosition = _canvasPosition;
     }
     else event->ignore();
@@ -106,18 +112,23 @@ void BaseNode::mousePressEvent(QMouseEvent *event)
 
 void BaseNode::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::MouseButton::LeftButton && !_bIsPinPressed)
-    {
-        _bIsMouseDown = false;
-        this->setCursor(QCursor(Qt::CursorShape::ArrowCursor));
-    }
-    else event->ignore();
+    this->setCursor(QCursor(Qt::CursorShape::ArrowCursor));
+    onSelect(event->modifiers() & c_multiSelectionModifier, _ID);
+    event->ignore();
 }
 
 void BaseNode::mouseMoveEvent(QMouseEvent *event)
 {
-    if (_bIsMouseDown)
+    if (event->buttons() & Qt::MouseButton::LeftButton)
     {
+        if ((mapToParent(event->position()) - _lastMouseDownPosition).manhattanLength()
+            > 0.2f * QApplication::startDragDistance())
+        {
+            this->setCursor(QCursor(Qt::CursorShape::OpenHandCursor));
+            if (!_bIsSelected)
+                onSelect(event->modifiers() & c_multiSelectionModifier, _ID);
+        }
+
         QPointF offset = mapToParent(event->position()) - _lastMouseDownPosition;
         if (_parentCanvas->getSnappingEnabled())
         {
@@ -129,7 +140,7 @@ void BaseNode::mouseMoveEvent(QMouseEvent *event)
 
         _lastMouseDownPosition = mapToParent(event->position());
     }
-    event->ignore();
+    else event->ignore();
 }
 
 void BaseNode::paintEvent(QPaintEvent *event)
@@ -138,6 +149,33 @@ void BaseNode::paintEvent(QPaintEvent *event)
     _painter->setRenderHint(QPainter::Antialiasing, true);
     paint(_painter, event);
     _painter->end();
+}
+
+void BaseNode::paintSimplifiedName(QPainter *painter, int desiredWidth, QPoint textOrigin)
+{
+    QSize nameBounding = painter->fontMetrics().size(Qt::TextSingleLine, _name);
+    float roundingRadiusZoomed = _parentCanvas->getZoomMultiplier() * c_nodeRoundingRadius;
+    float nameRoundedRectRoundingRadius = roundingRadiusZoomed * 0.1f;
+
+
+
+    QRect bounded = painter->boundingRect(QRect(textOrigin.x(), textOrigin.y(), desiredWidth, nameBounding.height() * 2),
+                                          Qt::AlignCenter, _name);
+
+    int oldWidth = bounded.width(), oldHeight = bounded.height();
+    bounded.setWidth(bounded.width() * c_nodeNameRoundedRectSizeX);
+    bounded.setHeight(bounded.height() * c_nodeNameRoundedRectSizeY);
+    bounded.translate((oldWidth - bounded.width()) / 2, (oldHeight - bounded.height()) / 2);
+
+    painter->drawRoundedRect(bounded, nameRoundedRectRoundingRadius, nameRoundedRectRoundingRadius);
+}
+
+void BaseNode::paintName(QPainter *painter, int desiredWidth, QPoint textOrigin)
+{
+    QSize nameBounding = painter->fontMetrics().size(Qt::TextSingleLine, _name);
+
+    painter->drawText(QRect(textOrigin.x(), textOrigin.y(), desiredWidth, nameBounding.height() * 2),
+                      (Qt::AlignVCenter | Qt::AlignHCenter), _name);
 }
 
 void BaseNode::paint(QPainter *painter, QPaintEvent *)
@@ -187,36 +225,41 @@ void BaseNode::paint(QPainter *painter, QPaintEvent *)
     int innerWidth = desiredWidth - outlineWidth * 2;
     int innerHeight = desiredHeight - outlineWidth * 2;
 
-    float roundingRadiusZoomed = parentZoom * c_nodeRoundingRadius;
-
-    float innerRoundingRadius = roundingRadiusZoomed;
+    float innerRoundingRadius = parentZoom * c_nodeRoundingRadius;
 
     // uncomment these for the outer
     // 0.92 is a magic number
 //    float innerRoundingRadius = roundingRadiusZoomed * 0.92;
 //    float outerRoundingRadius = roundingRadiusZoomed;
 
-    float nameRoundedRectRoundingRadius = roundingRadiusZoomed * 0.1f;
+
 
     QPoint desiredOrigin = mapFromParent(QPoint(this->pos()));
-    const QPoint &textOrigin = desiredOrigin;
 
+    QPainterPath path;
 
-//    // paint OUTER
-//    if (!bShouldSimplifyRender)
-//    {
-//        painter->setBrush(c_nodesOutlineColor);
+    // paint OUTER
+    if (_bIsSelected)
+    {
+        QPen pen(Qt::SolidLine);
+        pen.setColor(c_selectionColor);
+        painter->setPen(pen);
 
-//        painter->drawRoundedRect(QRect(desiredOrigin.x(), desiredOrigin.y(), desiredWidth, desiredHeight),
-//                                 outerRoundingRadius, outerRoundingRadius);
-//    }
+//        QRect outerRect(desiredOrigin.x(), desiredOrigin.y(), desiredWidth, desiredHeight);
+//        path.addRoundedRect(outerRect, outerRoundingRadius, outerRoundingRadius);
+
+//        painter->drawPath(path);
+    }
 
     // paint INNER
     {
         painter->setBrush(c_nodesBackgroundColor);
 
-        painter->drawRoundedRect(QRect(desiredOrigin.x() + outlineWidth, desiredOrigin.y() + outlineWidth,
-                                       innerWidth, innerHeight), innerRoundingRadius, innerRoundingRadius);
+        QRect innerRect(desiredOrigin.x() + outlineWidth, desiredOrigin.y() + outlineWidth, innerWidth, innerHeight);
+        path.addRoundedRect(innerRect, innerRoundingRadius, innerRoundingRadius);
+        path.setFillRule(Qt::WindingFill);
+
+        painter->drawPath(path);
     }
 
 
@@ -227,23 +270,12 @@ void BaseNode::paint(QPainter *painter, QPaintEvent *)
         painter->setPen(pen);
         painter->setBrush(c_nodesOutlineColor);
 
+        const QPoint &textOrigin = desiredOrigin;
+
         if (bShouldSimplifyRender) // draw rounded rect instead of text
-        {
-            QRect bounded = painter->boundingRect(QRect(textOrigin.x(), textOrigin.y(), desiredWidth, nameBounding.height() * 2),
-                                                  (Qt::AlignCenter), _name);
-
-            int oldWidth = bounded.width(), oldHeight = bounded.height();
-            bounded.setWidth(bounded.width() * c_nodeNameRoundedRectSizeX);
-            bounded.setHeight(bounded.height() * c_nodeNameRoundedRectSizeY);
-            bounded.translate((oldWidth - bounded.width()) / 2, (oldHeight - bounded.height()) / 2);
-
-            painter->drawRoundedRect(bounded, nameRoundedRectRoundingRadius, nameRoundedRectRoundingRadius);
-        }
+            paintSimplifiedName(painter, desiredWidth, textOrigin);
         else // draw actual text
-        {
-            painter->drawText(QRect(textOrigin.x(), textOrigin.y(), desiredWidth, nameBounding.height() * 2),
-                              (Qt::AlignVCenter | Qt::AlignHCenter), _name);
-        }
+            paintName(painter, desiredWidth, textOrigin);
     }
 
 
@@ -279,7 +311,6 @@ void BaseNode::paint(QPainter *painter, QPaintEvent *)
             }
         };
 
-        // in-pins
         std::ranges::for_each(_pins, manage);
     }
 }

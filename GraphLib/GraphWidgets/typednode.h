@@ -10,8 +10,14 @@ namespace GraphLib {
 class TypedNode : public BaseNode
 {
     Q_OBJECT
+
 public:
-    TypedNode(int ID, int typeID, Canvas *canvas, QWidget *parent = nullptr);
+    TypedNode(int typeID, Canvas *canvas);
+    TypedNode(int ID, int typeID, Canvas *canvas);
+
+    int getTypeID() const { return _typeID; }
+
+    void setTypeID(int newTypeID) { _typeID = newTypeID; }
 
 private:
     int _typeID;

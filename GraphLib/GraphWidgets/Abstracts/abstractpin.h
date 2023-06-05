@@ -33,9 +33,11 @@ class GRAPHLIB_EXPORT AbstractPin : public QWidget
     Q_OBJECT
 
 public:
-    explicit AbstractPin(int ID, BaseNode *parentNode, QWidget *parent = nullptr);
+    AbstractPin(BaseNode *parent);
+    AbstractPin(int ID, BaseNode *parent);
     ~AbstractPin();
 
+    void setID(int newID) { _ID = newID; }
     void setConnected(bool isConnected);
     void setColor(QColor color) { _color = color; }
     void setNormalD(float newD) { _normalD = newD; }

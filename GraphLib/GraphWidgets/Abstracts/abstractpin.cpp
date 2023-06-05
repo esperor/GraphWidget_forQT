@@ -10,9 +10,12 @@
 
 namespace GraphLib {
 
-AbstractPin::AbstractPin(int ID, BaseNode *parentNode, QWidget *parent)
+AbstractPin::AbstractPin(BaseNode *parent) : AbstractPin(-1, parent)
+{}
+
+AbstractPin::AbstractPin(int ID, BaseNode *parent)
     : QWidget{ parent }
-    , _parentNode{ parentNode }
+    , _parentNode{ parent }
     , _ID{ ID }
     , _color{ QColor(Qt::GlobalColor::black) }
     , _normalD{ c_normalPinD }
