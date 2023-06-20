@@ -39,8 +39,8 @@ QDebug GRAPHLIB_EXPORT &operator<<(QDebug &debug, const NodeSpawnData &obj);
 
 QDataStream GRAPHLIB_EXPORT &operator<<(QDataStream &out, const NodeSpawnData &obj);
 
-inline bool GRAPHLIB_EXPORT operator<(const NodeSpawnData &first, const NodeSpawnData &second) { return first.name < second.name; }
-inline bool GRAPHLIB_EXPORT operator>(const NodeSpawnData &first, const NodeSpawnData &second) { return first.name > second.name; }
+inline bool operator<(const NodeSpawnData &first, const NodeSpawnData &second) { return first.name < second.name; }
+inline bool operator>(const NodeSpawnData &first, const NodeSpawnData &second) { return first.name > second.name; }
 bool GRAPHLIB_EXPORT operator==(const NodeSpawnData &first, const NodeSpawnData &second);
 
 
@@ -48,8 +48,8 @@ QDebug GRAPHLIB_EXPORT &operator<<(QDebug &debug, const TypedNodeSpawnData &obj)
 
 QDataStream GRAPHLIB_EXPORT &operator<<(QDataStream &out, const TypedNodeSpawnData &obj);
 
-inline bool GRAPHLIB_EXPORT operator<(const TypedNodeSpawnData &first, const TypedNodeSpawnData &second) { return first.typeID < second.typeID; }
-inline bool GRAPHLIB_EXPORT operator>(const TypedNodeSpawnData &first, const TypedNodeSpawnData &second) { return first.typeID > second.typeID; }
+inline bool operator<(const TypedNodeSpawnData &first, const TypedNodeSpawnData &second) { return first.typeID < second.typeID; }
+inline bool operator>(const TypedNodeSpawnData &first, const TypedNodeSpawnData &second) { return first.typeID > second.typeID; }
 bool GRAPHLIB_EXPORT operator==(const TypedNodeSpawnData &first, const TypedNodeSpawnData &second);
 
 }

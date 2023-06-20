@@ -82,4 +82,31 @@ QPainterPath standardPath(const QPoint &origin, const QPoint &target, float zoom
     return path;
 }
 
+QColor NodeFactoryModule::parseToColor(const QString &str)
+{
+    const short rgbNums = 3;
+
+    // Split the color string into 3 numbers in 16 base
+    QString list[rgbNums];
+    for (int i = 0; i < rgbNums; i++)
+        list[i] = str.sliced(i * 2, 2);
+
+    int nums[rgbNums];
+    int i = 0;
+
+    for (auto elem : list)
+    {
+        bool ok;
+        int num = elem.toInt(&ok, 16);
+        if (!ok || i >= rgbNums)
+        {
+            qDebug() << num << "should be" << elem;
+            return QColor(0,0,0);
+        }
+
+        nums[i++] = num;
+    }
+    return QColor(nums[0], nums[1], nums[2]);
+}
+
 }

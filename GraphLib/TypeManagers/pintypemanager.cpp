@@ -9,9 +9,6 @@
 
 namespace GraphLib {
 
-QVector<QJsonObject> PinTypeManager::_types = {};
-QMap<QString, int> PinTypeManager::_typeNames = {};
-
 bool PinTypeManager::loadTypes(const char *file)
 {
     std::optional<QJsonObject> opt = loadFile(file);

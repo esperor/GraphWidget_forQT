@@ -5,25 +5,24 @@
 #include <QByteArray>
 
 #include "typednodeimage.h"
-#include "../constants.h"
+#include "constants.h"
 #include "TypeManagers/nodetypemanager.h"
 #include "utility.h"
 
 namespace GraphLib {
 
-namespace NodeFactory {
+namespace NodeFactoryModule {
 
 TypedNodeImage::TypedNodeImage(QWidget *parent)
     : QWidget{ parent }
+    , fontSize{ 11 }
     , _painter{ new QPainter() }
 {}
 
 TypedNodeImage::TypedNodeImage(QString type, QWidget *parent)
-    : QWidget{ parent }
-    , typeName{ type }
-    , _painter{ new QPainter() }
+    : TypedNodeImage(parent)
 {
-    typeID = NodeTypeManager::TypeNames()[type];
+    typeName = type;
 }
 
 TypedNodeImage::~TypedNodeImage()
@@ -34,6 +33,13 @@ TypedNodeImage::~TypedNodeImage()
 TypedNodeSpawnData TypedNodeImage::getData() const
 {
     return TypedNodeSpawnData(typeName, typeID);
+}
+
+QSize TypedNodeImage::getDesiredSize() const
+{
+    QFont font = standardFont(fontSize);
+    QFontMetrics metrics(font);
+    return metrics.size(Qt::TextSingleLine, typeName);
 }
 
 void TypedNodeImage::mousePressEvent(QMouseEvent *event)
@@ -70,7 +76,7 @@ void TypedNodeImage::paint(QPainter *painter, QPaintEvent *event)
     setUpdatesEnabled(false);
 
     QPen pen(Qt::SolidLine);
-    pen.setColor(c_nodesOutlineColor);
+    pen.setColor(c_highlightColor);
     painter->setPen(pen);
 
     QRect rect = event->rect();

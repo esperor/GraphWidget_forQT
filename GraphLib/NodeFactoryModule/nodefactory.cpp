@@ -6,16 +6,25 @@
 #include "TypeManagers/nodetypemanager.h"
 #include "TypeManagers/pintypemanager.h"
 #include "nodefactory.h"
+#include "utility.h"
 
 namespace GraphLib {
 
-namespace NodeFactory {
+namespace NodeFactoryModule {
 
-TypedNode *getNodeOfType(int typeID, Canvas *canvas)
+
+NodeFactory::NodeFactory()
+{}
+
+TypedNode *NodeFactory::getNodeOfType(int typeID, Canvas *canvas)
 {
     TypedNode *node = new TypedNode(typeID, canvas);
 
-    const QJsonObject &type = NodeTypeManager::Types()[typeID];
+    node->setName(_nodeTypeManager->Types()[typeID].value("name").toString());
+    node->setNodeTypeManager(_nodeTypeManager);
+    node->setPinTypeManager(_pinTypeManager);
+
+    const QJsonObject &type = _nodeTypeManager->Types()[typeID];
     QJsonValue inPins = type.value("in-pins");
     QJsonValue outPins = type.value("out-pins");
 
@@ -28,9 +37,9 @@ TypedNode *getNodeOfType(int typeID, Canvas *canvas)
     return node;
 }
 
-void addPinsToNodeByJsonValue(const QJsonValue &val, TypedNode *node, PinDirection direction)
+void NodeFactory::addPinsToNodeByJsonValue(const QJsonValue &val, TypedNode *node, PinDirection direction)
 {
-    const QVector<QJsonObject> &pinTypes = PinTypeManager::Types();
+    const QVector<QJsonObject> &pinTypes = _pinTypeManager->Types();
     QJsonArray pins = val.toArray();
 
     for (auto it = pins.begin(); it < pins.end(); it++)
@@ -38,7 +47,7 @@ void addPinsToNodeByJsonValue(const QJsonValue &val, TypedNode *node, PinDirecti
         QJsonObject pinObject = (*it).toObject();
 
         QString typeName = pinObject.value("type").toString();
-        int id = PinTypeManager::TypeNames()[typeName];
+        int id = _pinTypeManager->TypeNames()[typeName];
         const QJsonObject &type = pinTypes[id];
         QString colorString = type.value("color").toString();
         QColor color = parseToColor(colorString);
@@ -52,37 +61,6 @@ void addPinsToNodeByJsonValue(const QJsonValue &val, TypedNode *node, PinDirecti
     }
 }
 
-QColor parseToColor(const QString &str)
-{
-    const short rgbNums = 3;
-
-    // Split the color string into 3 numbers in 16 base
-    QString list[rgbNums];
-    for (int i = 0; i < rgbNums; i++)
-        list[i] = str.sliced(i * 2, 2);
-
-    int nums[rgbNums];
-    int i = 0;
-
-    for (auto elem : list)
-    {
-        bool ok;
-        int num = elem.toInt(&ok, 16);
-        if (!ok || i >= rgbNums)
-        {
-            qDebug() << num << "should be" << elem;
-            return QColor(0,0,0);
-        }
-
-        nums[i++] = num;
-    }
-    return QColor(nums[0], nums[1], nums[2]);
-}
-
-NodeFactory::NodeFactory()
-{
-
-}
 
 }
 

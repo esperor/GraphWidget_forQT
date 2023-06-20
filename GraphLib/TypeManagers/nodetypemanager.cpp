@@ -9,9 +9,6 @@
 
 namespace GraphLib {
 
-QVector<QJsonObject> NodeTypeManager::_types = {};
-QMap<QString, int> NodeTypeManager::_typeNames = {};
-
 bool NodeTypeManager::loadTypes(const char *file)
 {
     std::optional<QJsonObject> opt = loadFile(file);

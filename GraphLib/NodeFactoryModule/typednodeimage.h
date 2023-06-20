@@ -4,10 +4,11 @@
 #include <QWidget>
 
 #include "DataClasses/nodespawndata.h"
+#include "TypeManagers/nodetypemanager.h"
 
 namespace GraphLib {
 
-namespace NodeFactory {
+namespace NodeFactoryModule {
 
 class TypedNodeImage : public QWidget
 {
@@ -19,9 +20,13 @@ public:
     ~TypedNodeImage();
 
     TypedNodeSpawnData getData() const;
+    QSize getDesiredSize() const;
+    void initType() { typeID = TypeManager->TypeNames()[typeName]; }
 
     QString typeName;
     int typeID;
+    int fontSize;
+    const NodeTypeManager *TypeManager;
 
 protected:
     void paintEvent(QPaintEvent *event) override;

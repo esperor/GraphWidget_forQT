@@ -13,6 +13,7 @@
 #include <QList>
 #include <QByteArray>
 #include <QDropEvent>
+#include <QMenu>
 
 #include "GraphLib_global.h"
 #include "DataClasses/pindata.h"
@@ -46,7 +47,7 @@ public:
     void addConnectedPin(PinData pin);
     void removeConnectedPinByID(int ID);
 
-    int getID() const { return _ID; }
+    int ID() const { return _ID; }
     int getNodeID() const;
     bool isConnected() const { return _bIsConnected; }
     const QColor &getColor() const { return _color; }
@@ -58,16 +59,16 @@ public:
     QPoint getCenter() const { return mapToParent(_center); }
     QPixmap getPixmap() const;
     PinData getData() const;
-    const QMap<int, PinData> &getConnectedPins() const { return _connectedPins; }
+
+    // int here is pinID of connected pin
+    QVector<PinData> getConnectedPins() const { return _connectedPins.values(); }
 
     static bool static_isInPin(const AbstractPin *pin) { return pin->getDirection() == PinDirection::In; }
 
 signals:
     void onDrag(PinDragSignal signal);
     void onConnect(PinData outPin, PinData Pin);
-
-private:
-    void paint(QPainter *painter, QPaintEvent *event);
+    void onConnectionBreak(PinData outPin, PinData Pin);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -75,6 +76,11 @@ protected:
     void dropEvent(QDropEvent *event) override;
     void dragEnterEvent(QDragEnterEvent *event) override;
     void dragLeaveEvent(QDragLeaveEvent *event) override;
+
+private:
+    void paint(QPainter *painter, QPaintEvent *event);
+    void startDrag();
+    void showContextMenu(const QMouseEvent *event);
 
     BaseNode *_parentNode;
     int _ID;
@@ -84,7 +90,11 @@ protected:
     QString _text;
     PinDirection _direction;
     QPoint _center;
+    // int here is pinID of connected pin
     QMap<int, PinData> _connectedPins;
+    QMap<int, QAction*> _breakConnectionActions;
+
+    QMenu _contextMenu;
 
     QPainter *_painter;
 };

@@ -19,11 +19,13 @@ BaseNode::BaseNode(int ID, Canvas *canvas)
     : QWidget{ canvas }
     , _parentCanvas{ canvas }
     , _ID{ ID }
+    , _zoom{ _parentCanvas->getZoomMultiplier() }
     , _painter{ new QPainter() }
     , _canvasPosition{ QPointF(0, 0) }
     , _hiddenPosition{ QPointF() }
     , _bIsSelected{ false }
     , _lastMouseDownPosition{ QPointF(0, 0) }
+    , _mousePressPosition{ QPointF(0, 0) }
     , _name{ QString("") }
     , _pinsOutlineCoords{ QMap<int, QPoint>() }
     , _pins{ QMap<int, AbstractPin*>() }
@@ -46,12 +48,66 @@ BaseNode::~BaseNode()
 
 unsigned int BaseNode::IDgenerator = 0;
 
+
+// ------------------- GENERAL --------------------
+
+
+void BaseNode::setPinConnection(int pinID, PinData connectedPin)
+{
+    _pins[pinID]->setConnected(true);
+    _pins[pinID]->addConnectedPin(connectedPin);
+}
+
+void BaseNode::setPinConnected(int pinID, bool isConnected)
+{
+    _pins[pinID]->setConnected(isConnected);
+}
+
+float BaseNode::getParentCanvasZoomMultiplier() const
+{
+    return _parentCanvas->getZoomMultiplier();
+}
+
+QRect BaseNode::getMappedRect() const
+{
+    QRect nodeRect = this->rect();
+    QPoint mappedTopLeft = this->mapToParent(nodeRect.topLeft());
+    QRect mapped(mappedTopLeft.x(), mappedTopLeft.y(), nodeRect.width(), nodeRect.height());
+    return mapped;
+}
+
+bool BaseNode::hasPinConnections() const
+{
+    return std::ranges::any_of(_pins, [&](AbstractPin *pin){
+        return !pin->getConnectedPins().isEmpty();
+    });
+}
+
+QSharedPointer< QMap<int, QVector<PinData> > > BaseNode::getPinConnections() const
+{
+    auto out = QSharedPointer<QMap<int, QVector<PinData> >>(new QMap<int, QVector<PinData> >());
+    std::ranges::for_each(_pins, [&](AbstractPin *pin){
+        out->insert(pin->ID(), pin->getConnectedPins());
+    });
+    return out;
+}
+
+void BaseNode::removePinConnection(int pinID, int connectedPinID)
+{
+    _pins[pinID]->removeConnectedPinByID(connectedPinID);
+}
+
+
+// -------------------- SLOTS ---------------------
+
+
 void BaseNode::addPin(AbstractPin *pin)
 {
     pin->setID(newID());
-    _pins.insert(pin->getID(), pin);
+    _pins.insert(pin->ID(), pin);
     connect(pin, &AbstractPin::onDrag, this, &BaseNode::slot_onPinDrag);
     connect(pin, &AbstractPin::onConnect, this, &BaseNode::slot_onPinConnect);
+    connect(pin, &AbstractPin::onConnectionBreak, this, &BaseNode::slot_onPinConnectionBreak);
     pin->show();
 }
 
@@ -81,48 +137,38 @@ void BaseNode::slot_onPinDrag(PinDragSignal signal)
     onPinDrag(signal);
 }
 
-void BaseNode::slot_onPinConnect(PinData sourcePin, PinData targetPin)
-{ onPinConnect(sourcePin, targetPin); }
+void BaseNode::slot_onPinConnect(PinData outPin, PinData inPin)
+{ onPinConnect(outPin, inPin); }
 
-void BaseNode::setPinConnection(int pinID, PinData connectedPin)
-{
-    _pins[pinID]->setConnected(true);
-    _pins[pinID]->addConnectedPin(connectedPin);
-}
+void BaseNode::slot_onPinConnectionBreak(PinData outPin, PinData inPin)
+{ onPinConnectionBreak(outPin, inPin); }
 
-void BaseNode::setPinConnected(int pinID, bool isConnected)
-{
-    _pins[pinID]->setConnected(isConnected);
-}
 
-float BaseNode::getParentCanvasZoomMultiplier() const
-{
-    return _parentCanvas->getZoomMultiplier();
-}
+// -------------------- EVENTS ---------------------
+
 
 void BaseNode::mousePressEvent(QMouseEvent *event)
 {
     if (event->buttons() & Qt::MouseButton::LeftButton)
     {
         _lastMouseDownPosition = mapToParent(event->position());
+        _mousePressPosition = event->position();
         _hiddenPosition = _canvasPosition;
     }
-    else event->ignore();
 }
 
 void BaseNode::mouseReleaseEvent(QMouseEvent *event)
 {
     this->setCursor(QCursor(Qt::CursorShape::ArrowCursor));
     onSelect(event->modifiers() & c_multiSelectionModifier, _ID);
-    event->ignore();
 }
 
 void BaseNode::mouseMoveEvent(QMouseEvent *event)
 {
     if (event->buttons() & Qt::MouseButton::LeftButton)
     {
-        if ((mapToParent(event->position()) - _lastMouseDownPosition).manhattanLength()
-            > 0.2f * QApplication::startDragDistance())
+        if ((event->position() - _mousePressPosition).manhattanLength()
+            > QApplication::startDragDistance())
         {
             this->setCursor(QCursor(Qt::CursorShape::OpenHandCursor));
             if (!_bIsSelected)
@@ -132,29 +178,24 @@ void BaseNode::mouseMoveEvent(QMouseEvent *event)
         QPointF offset = mapToParent(event->position()) - _lastMouseDownPosition;
         if (_parentCanvas->getSnappingEnabled())
         {
-            _hiddenPosition += (offset / _parentCanvas->getZoomMultiplier());
+            _hiddenPosition += (offset / _zoom);
             _canvasPosition = snap(_hiddenPosition, _parentCanvas->getSnappingInterval());
         }
         else
-            _canvasPosition += (offset / _parentCanvas->getZoomMultiplier());
+            _canvasPosition += (offset / _zoom);
 
         _lastMouseDownPosition = mapToParent(event->position());
     }
-    else event->ignore();
 }
 
-void BaseNode::paintEvent(QPaintEvent *event)
-{
-    _painter->begin(this);
-    _painter->setRenderHint(QPainter::Antialiasing, true);
-    paint(_painter, event);
-    _painter->end();
-}
+
+// ----------------- PAINT HELPERS ------------------
+
 
 void BaseNode::paintSimplifiedName(QPainter *painter, int desiredWidth, QPoint textOrigin)
 {
     QSize nameBounding = painter->fontMetrics().size(Qt::TextSingleLine, _name);
-    float roundingRadiusZoomed = _parentCanvas->getZoomMultiplier() * c_nodeRoundingRadius;
+    float roundingRadiusZoomed = _zoom * c_nodeRoundingRadius;
     float nameRoundedRectRoundingRadius = roundingRadiusZoomed * 0.1f;
 
 
@@ -170,19 +211,41 @@ void BaseNode::paintSimplifiedName(QPainter *painter, int desiredWidth, QPoint t
     painter->drawRoundedRect(bounded, nameRoundedRectRoundingRadius, nameRoundedRectRoundingRadius);
 }
 
+int BaseNode::calculateRowsOffset(QPainter *painter) const
+{
+    QFont font = standardFont(c_nodeNameSize * _zoom);
+    painter->setFont(font);
+    QSize nameBounding = painter->fontMetrics().size(Qt::TextSingleLine, _name);
+    return nameBounding.height() * 1.5 + c_normalPinD * _zoom;
+}
+
 void BaseNode::paintName(QPainter *painter, int desiredWidth, QPoint textOrigin)
 {
     QSize nameBounding = painter->fontMetrics().size(Qt::TextSingleLine, _name);
+    QFont font = standardFont(c_nodeNameSize * _zoom);
+    painter->setFont(font);
 
     painter->drawText(QRect(textOrigin.x(), textOrigin.y(), desiredWidth, nameBounding.height() * 2),
                       (Qt::AlignVCenter | Qt::AlignHCenter), _name);
 }
 
+
+// --------------------- PAINT ----------------------
+
+
+void BaseNode::paintEvent(QPaintEvent *event)
+{
+    _painter->begin(this);
+    _painter->setRenderHint(QPainter::Antialiasing, true);
+    paint(_painter, event);
+    _painter->end();
+}
+
 void BaseNode::paint(QPainter *painter, QPaintEvent *)
 {
-    float parentZoom = _parentCanvas->getZoomMultiplier();
-    bool bShouldSimplifyRender = parentZoom <= c_changeRenderZoomMultiplier;
-    int normalPinDZoomed = c_normalPinD * parentZoom;
+    _zoom = _parentCanvas->getZoomMultiplier();
+    bool bShouldSimplifyRender = _zoom <= c_changeRenderZoomMultiplier;
+    int normalPinDZoomed = c_normalPinD * _zoom;
 
     auto calculateWidth = [&](){
         int maxInWidth = 0, maxOutWidth = 0;
@@ -191,10 +254,10 @@ void BaseNode::paint(QPainter *painter, QPaintEvent *)
             switch (pin->getDirection())
             {
             case PinDirection::In:
-                maxInWidth = std::max(maxInWidth, pin->getDesiredWidth(parentZoom));
+                maxInWidth = std::max(maxInWidth, pin->getDesiredWidth(_zoom));
                 break;
             case PinDirection::Out:
-                maxOutWidth = std::max(maxOutWidth, pin->getDesiredWidth(parentZoom));
+                maxOutWidth = std::max(maxOutWidth, pin->getDesiredWidth(_zoom));
                 break;
             default:;
             }
@@ -208,31 +271,20 @@ void BaseNode::paint(QPainter *painter, QPaintEvent *)
 
     QPen pen(Qt::NoPen);
     painter->setPen(pen);
-    QFont font = standardFont(c_nodeNameSize * parentZoom);
-    painter->setFont(font);
 
-    QSize nameBounding = painter->fontMetrics().size(Qt::TextSingleLine, _name);
-
-    int pinsOffsetY =  nameBounding.height() * 1.5 + normalPinDZoomed;
+    int pinsOffsetY = calculateRowsOffset(painter);
 
     int desiredWidth = calculateWidth();
     int desiredHeight = pinsOffsetY + pinRows * normalPinDZoomed * 2;
 
-    _normalSize.setWidth(desiredWidth / parentZoom);
-    _normalSize.setHeight(desiredHeight / parentZoom);
+    _normalSize.setWidth(desiredWidth / _zoom);
+    _normalSize.setHeight(desiredHeight / _zoom);
 
-    int outlineWidth = static_cast<int>(std::min(c_globalOutlineWidth * parentZoom, c_nodeMaxOutlineWidth));
+    int outlineWidth = static_cast<int>(std::min(c_globalOutlineWidth * _zoom, c_nodeMaxOutlineWidth));
     int innerWidth = desiredWidth - outlineWidth * 2;
     int innerHeight = desiredHeight - outlineWidth * 2;
 
-    float innerRoundingRadius = parentZoom * c_nodeRoundingRadius;
-
-    // uncomment these for the outer
-    // 0.92 is a magic number
-//    float innerRoundingRadius = roundingRadiusZoomed * 0.92;
-//    float outerRoundingRadius = roundingRadiusZoomed;
-
-
+    float innerRoundingRadius = _zoom * c_nodeRoundingRadius;
 
     QPoint desiredOrigin = mapFromParent(QPoint(this->pos()));
 
@@ -244,11 +296,6 @@ void BaseNode::paint(QPainter *painter, QPaintEvent *)
         QPen pen(Qt::SolidLine);
         pen.setColor(c_selectionColor);
         painter->setPen(pen);
-
-//        QRect outerRect(desiredOrigin.x(), desiredOrigin.y(), desiredWidth, desiredHeight);
-//        path.addRoundedRect(outerRect, outerRoundingRadius, outerRoundingRadius);
-
-//        painter->drawPath(path);
     }
 
     // paint INNER
@@ -266,22 +313,22 @@ void BaseNode::paint(QPainter *painter, QPaintEvent *)
     // paint NAME
     {
         pen.setStyle(Qt::SolidLine);
-        pen.setColor(c_nodesOutlineColor);
+        pen.setColor(c_highlightColor);
         painter->setPen(pen);
-        painter->setBrush(c_nodesOutlineColor);
+        painter->setBrush(c_highlightColor);
 
         const QPoint &textOrigin = desiredOrigin;
 
-        if (bShouldSimplifyRender) // draw rounded rect instead of text
+        if (bShouldSimplifyRender)
             paintSimplifiedName(painter, desiredWidth, textOrigin);
-        else // draw actual text
+        else
             paintName(painter, desiredWidth, textOrigin);
     }
 
 
     // manage PINS
     {
-        pen.setWidth(c_pinConnectLineWidth * parentZoom);
+        pen.setWidth(c_pinConnectLineWidth * _zoom);
 
         int inPinsOffsetY = pinsOffsetY;
         int outPinsOffsetY = pinsOffsetY;
@@ -294,20 +341,20 @@ void BaseNode::paint(QPainter *painter, QPaintEvent *)
                 inPinsOffsetY += 2 * normalPinDZoomed;
                 break;
             case PinDirection::Out:
-                pin->move(QPoint(desiredWidth - normalPinDZoomed - pin->getDesiredWidth(parentZoom), outPinsOffsetY));
+                pin->move(QPoint(desiredWidth - normalPinDZoomed - pin->getDesiredWidth(_zoom), outPinsOffsetY));
                 outPinsOffsetY += 2 * normalPinDZoomed;
                 break;
             default:;
             }
 
-            pin->setFixedSize(pin->getDesiredWidth(parentZoom), pin->getNormalD() * parentZoom);
-            _pinsOutlineCoords[pin->getID()] = QPoint(pin->isInPin() ? 0 : desiredWidth, pin->getCenter().y());
+            pin->setFixedSize(pin->getDesiredWidth(_zoom), pin->getNormalD() * _zoom);
+            _pinsOutlineCoords[pin->ID()] = QPoint(pin->isInPin() ? 0 : desiredWidth, pin->getCenter().y());
 
             if (pin->isConnected())
             {
                 pen.setColor(pin->getColor());
                 painter->setPen(pen);
-                painter->drawLine(_pinsOutlineCoords[pin->getID()], pin->getCenter());
+                painter->drawLine(_pinsOutlineCoords[pin->ID()], pin->getCenter());
             }
         };
 

@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <QMainWindow>
@@ -30,5 +29,6 @@ private:
     Ui::MainWindow *ui;
     GraphLib::Canvas *_canvas;
     QTimer *_timer;
+
 };
 

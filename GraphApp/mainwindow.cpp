@@ -2,6 +2,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "constants.h"
+#include "TypeManagers/nodetypemanager.h"
+#include "TypeManagers/pintypemanager.h"
 
 using namespace GraphLib;
 
@@ -17,6 +19,17 @@ MainWindow::MainWindow(QWidget *parent)
     QPalette palette(c_paletteDefaultColor);
     palette.setColor(QPalette::ColorRole::Window, c_paletteDefaultColor);
     this->setPalette(palette);
+
+    QString path = "./../../";
+    QString pins = "pins.json", nodes = "nodes.json";
+
+    NodeTypeManager *nodeManager = new NodeTypeManager();
+    PinTypeManager *pinManager = new PinTypeManager();
+    nodeManager->loadTypes(path + nodes);
+    pinManager->loadTypes(path + pins);
+    _canvas->setNodeTypeManager(nodeManager);
+    _canvas->setPinTypeManager(pinManager);
+
 
     setFocusPolicy(Qt::StrongFocus);
 

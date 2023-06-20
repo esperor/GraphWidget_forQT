@@ -17,19 +17,18 @@ struct GRAPHLIB_EXPORT PinData
 public:
     PinData() {}
     PinData(const PinData &other);
-    PinData(PinDirection _direction, int _nodeID, int _pinID, int _typeID, const QString &_text, const QColor &_color);
+    PinData(PinDirection _direction, int _nodeID, int _pinID, int _typeID = -1);
     PinData(const AbstractPin *pin);
     virtual ~PinData();
 
-    QByteArray toByteArray();
+    QByteArray toByteArray() const;
     static PinData fromByteArray(const QByteArray &byteArray);
+    void operator=(const PinData &other);
 
     PinDirection pinDirection;
     int nodeID;
     int pinID;
     int typeID;
-    QString pinText;
-    QColor color;
 };
 
 QDebug GRAPHLIB_EXPORT &operator<<(QDebug &debug, const PinData &obj);

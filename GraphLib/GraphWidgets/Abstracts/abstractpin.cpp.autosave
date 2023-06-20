@@ -121,7 +121,7 @@ void AbstractPin::showContextMenu(const QMouseEvent *event)
     QMenu *breakMenu = _contextMenu.addMenu("Break connnection");
     std::ranges::for_each(_connectedPins.asKeyValueRange(), [&](const std::pair<int, PinData> &pair){
         QString nodeName = _parentNode->getParentCanvas()->getNodeName(pair.second.nodeID);
-        breakMenu->addAction(new QAction("Break connection to " + nodeName, breakMenu));
+        breakMenu->addAction(new QAction("to " + nodeName, breakMenu));
         QAction *action = breakMenu->actions().last();
         action->setData(QVariant(pair.second.toByteArray()));
 

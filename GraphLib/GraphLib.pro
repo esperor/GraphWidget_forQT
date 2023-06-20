@@ -13,10 +13,11 @@ SOURCES += \
     DataClasses/nodespawndata.cpp \
     GraphWidgets/Abstracts/abstractpin.cpp \
     GraphWidgets/Abstracts/basenode.cpp \
-    NodeFactory/nodefactory.cpp \
-    NodeFactory/nodefactorywidget.cpp \
+    NodeFactoryModule/nfbuttonminimize.cpp \
+    NodeFactoryModule/nodefactory.cpp \
+    NodeFactoryModule/nodefactorywidget.cpp \
     GraphWidgets/canvas.cpp \
-    NodeFactory/typednodeimage.cpp \
+    NodeFactoryModule/typednodeimage.cpp \
     TypeManagers/nodetypemanager.cpp \
     GraphWidgets/pin.cpp \
     DataClasses/pindata.cpp \
@@ -31,10 +32,12 @@ HEADERS += \
     GraphLib_global.h \
     GraphWidgets/Abstracts/abstractpin.h \
     GraphWidgets/Abstracts/basenode.h \
-    NodeFactory/nodefactory.h \
-    NodeFactory/nodefactorywidget.h \
+    NodeFactoryModule/nfbuttonminimize.h \
+    NodeFactoryModule/nodefactory.h \
+    NodeFactoryModule/nodefactorywidget.h \
     GraphWidgets/canvas.h \
-    NodeFactory/typednodeimage.h \
+    NodeFactoryModule/typednodeimage.h \
+    TypeManagers/typemanager.h \
     constants.h \
     TypeManagers/nodetypemanager.h \
     GraphWidgets/pin.h \
